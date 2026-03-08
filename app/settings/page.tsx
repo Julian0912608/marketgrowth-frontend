@@ -32,7 +32,7 @@ const TABS = [
 ];
 
 export default function SettingsPage() {
-  const { user, setAuth, accessToken } = useAuthStore();
+  const { user, updateUser, accessToken, setAuth } = useAuthStore();
   const [activeTab, setActiveTab]   = useState('profile');
   const [billing, setBilling]       = useState<BillingOverview | null>(null);
   const [billingLoading, setBillingLoading] = useState(false);
@@ -84,13 +84,11 @@ export default function SettingsPage() {
       const res = await api.patch('/auth/profile', { firstName, lastName });
       // Gebruik response data (bevestigd door backend) om store bij te werken
       const saved = res.data;
-      if (user && accessToken) {
-        setAuth({
-          ...user,
-          firstName: saved.firstName ?? firstName,
-          lastName:  saved.lastName  ?? lastName,
-        }, accessToken);
-      }
+      // Update store — persist middleware slaat dit automatisch op
+      updateUser({
+        firstName: saved.firstName ?? firstName,
+        lastName:  saved.lastName  ?? lastName,
+      });
       // Sync lokale state met opgeslagen waarden
       setFirstName(saved.firstName ?? firstName);
       setLastName(saved.lastName   ?? lastName);
