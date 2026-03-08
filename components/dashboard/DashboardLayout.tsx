@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
@@ -23,8 +23,28 @@ const navItems = [
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname  = usePathname();
   const router    = useRouter();
-  const { user, clearAuth } = useAuthStore();
+  const { user, updateUser, clearAuth } = useAuthStore();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // Refresh user data from backend on every mount
+  // This ensures naam/email altijd up-to-date is na een page refresh
+  useEffect(() => {
+    const refreshUser = async () => {
+      try {
+        const res = await api.get('/auth/me');
+        updateUser({
+          userId:    res.data.userId,
+          email:     res.data.email,
+          firstName: res.data.firstName,
+          lastName:  res.data.lastName,
+          role:      res.data.role,
+        });
+      } catch {
+        // 401 = token verlopen, axios interceptor handelt redirect af
+      }
+    };
+    refreshUser();
+  }, []);
 
   const handleLogout = async () => {
     try { await api.post('/auth/logout'); } catch {}
@@ -72,7 +92,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
       <div className="px-3 py-4 border-t border-slate-800">
         <div className="flex items-center gap-3 px-3 py-2.5 rounded-lg mb-1">
           <div className="w-7 h-7 rounded-full bg-brand-600/20 border border-brand-600/30 flex items-center justify-center text-xs font-bold text-brand-400">
-            {user?.firstName?.[0]}{user?.lastName?.[0]}
+            {user?.firstName?.[0]?.toUpperCase()}{user?.lastName?.[0]?.toUpperCase()}
           </div>
           <div className="flex-1 min-w-0">
             <div className="text-xs font-medium text-white truncate">
