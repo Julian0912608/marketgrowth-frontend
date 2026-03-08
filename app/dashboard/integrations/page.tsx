@@ -6,18 +6,23 @@ import { api } from '@/lib/api';
 
 const PLATFORMS = [
   { id: 'shopify',     name: 'Shopify',      color: 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400', type: 'oauth',       fields: [] },
-  { id: 'bolcom',      name: 'Bol.com',      color: 'bg-blue-500/10 border-blue-500/20 text-blue-400',         type: 'credentials', fields: ['clientId', 'clientSecret'] },
-  { id: 'etsy',        name: 'Etsy',         color: 'bg-amber-500/10 border-amber-500/20 text-amber-400',      type: 'credentials', fields: ['shopId', 'accessToken'] },
+  { id: 'bolcom',      name: 'Bol.com',      color: 'bg-blue-500/10 border-blue-500/20 text-blue-400',         type: 'credentials', fields: ['apiKey', 'apiSecret'] },
   { id: 'woocommerce', name: 'WooCommerce',  color: 'bg-violet-500/10 border-violet-500/20 text-violet-400',   type: 'credentials', fields: ['siteUrl', 'consumerKey', 'consumerSecret'] },
+  { id: 'lightspeed',  name: 'Lightspeed',   color: 'bg-cyan-500/10 border-cyan-500/20 text-cyan-400',         type: 'credentials', fields: ['siteUrl', 'apiKey'] },
+  { id: 'bigcommerce', name: 'BigCommerce',  color: 'bg-purple-500/10 border-purple-500/20 text-purple-400',   type: 'credentials', fields: ['storeUrl', 'apiKey'] },
+  { id: 'etsy',        name: 'Etsy',         color: 'bg-amber-500/10 border-amber-500/20 text-amber-400',      type: 'oauth',       fields: [] },
   { id: 'amazon',      name: 'Amazon',       color: 'bg-orange-500/10 border-orange-500/20 text-orange-400',   type: 'coming_soon', fields: [] },
-  { id: 'pinterest',   name: 'Pinterest',    color: 'bg-rose-500/10 border-rose-500/20 text-rose-400',         type: 'credentials', fields: ['adAccountId', 'accessToken'] },
+  { id: 'magento',     name: 'Magento',      color: 'bg-rose-500/10 border-rose-500/20 text-rose-400',         type: 'credentials', fields: ['siteUrl', 'apiKey', 'apiSecret'] },
 ];
 
+// Labels die getoond worden in de input placeholders
 const FIELD_LABELS: Record<string, string> = {
-  clientId: 'Client ID', clientSecret: 'Client Secret',
-  shopId: 'Shop ID', accessToken: 'Access Token',
-  siteUrl: 'Store URL', consumerKey: 'Consumer Key', consumerSecret: 'Consumer Secret',
-  adAccountId: 'Ad Account ID',
+  apiKey:         'Client ID',
+  apiSecret:      'Client Secret',
+  siteUrl:        'Store URL (https://...)',
+  consumerKey:    'Consumer Key',
+  consumerSecret: 'Consumer Secret',
+  storeUrl:       'Store URL (https://...)',
 };
 
 function StatusBadge({ status }: { status: string }) {
@@ -47,33 +52,68 @@ export default function IntegrationsPage() {
   const load = async () => {
     try {
       const res = await api.get('/integrations');
-      setConnections(res.data.connections);
+      setConnections(res.data ?? res.data?.connections ?? []);
     } catch {}
   };
 
   useEffect(() => { load(); }, []);
 
-  const handleShopifyInstall = async () => {
-    const domain = prompt('Enter your Shopify store domain (e.g. mystore.myshopify.com)');
-    if (!domain) return;
-    try {
-      const res = await api.post('/integrations/shopify/install', { shopDomain: domain });
-      window.location.href = res.data.installUrl;
-    } catch (err: any) {
-      setError(err.response?.data?.error ?? 'Failed to connect Shopify');
+  // ── OAuth platforms (Shopify, Etsy) ──────────────────────
+  const handleOAuthConnect = async (platformId: string) => {
+    if (platformId === 'shopify') {
+      const domain = prompt('Voer je Shopify store domein in (bijv. mystore.myshopify.com)');
+      if (!domain) return;
+      try {
+        const res = await api.post('/integrations/connect', {
+          platformSlug: 'shopify',
+          shopDomain: domain.trim(),
+        });
+        if (res.data.authUrl) {
+          window.location.href = res.data.authUrl;
+        }
+      } catch (err: any) {
+        setError(err.response?.data?.error ?? 'Shopify verbinding mislukt');
+      }
+      return;
+    }
+
+    if (platformId === 'etsy') {
+      try {
+        const res = await api.post('/integrations/connect', { platformSlug: 'etsy' });
+        if (res.data.authUrl) {
+          window.location.href = res.data.authUrl;
+        }
+      } catch (err: any) {
+        setError(err.response?.data?.error ?? 'Etsy verbinding mislukt');
+      }
+      return;
     }
   };
 
+  // ── API key platforms (Bol.com, WooCommerce, etc.) ───────
   const handleConnect = async (platformId: string) => {
     setLoading(true);
     setError('');
     try {
-      await api.post(`/integrations/${platformId}/connect`, formData);
+      // Stuur altijd platformSlug mee + de ingevulde velden
+      const payload: Record<string, string> = {
+        platformSlug: platformId,
+        ...formData,
+      };
+
+      const res = await api.post('/integrations/connect', payload);
+
+      // OAuth redirect indien nodig (edge case)
+      if (res.data.authUrl) {
+        window.location.href = res.data.authUrl;
+        return;
+      }
+
       setConnecting(null);
       setFormData({});
       await load();
     } catch (err: any) {
-      setError(err.response?.data?.error ?? 'Connection failed');
+      setError(err.response?.data?.error ?? 'Verbinding mislukt. Controleer je gegevens.');
     } finally {
       setLoading(false);
     }
@@ -89,20 +129,20 @@ export default function IntegrationsPage() {
   };
 
   const handleDisconnect = async (id: string) => {
-    if (!confirm('Disconnect this store?')) return;
+    if (!confirm('Weet je zeker dat je deze koppeling wil verwijderen?')) return;
     try {
       await api.delete(`/integrations/${id}`);
       await load();
     } catch {}
   };
 
-  const connectedPlatforms = new Set(connections.map(c => c.platform));
+  const connectedPlatforms = new Set(connections.map((c: any) => c.platformSlug ?? c.platform));
 
   return (
     <div className="p-6 max-w-5xl mx-auto">
       <div className="mb-8">
-        <h1 className="font-display text-2xl font-800 text-white mb-1">Integrations</h1>
-        <p className="text-slate-400 text-sm">Connect your stores and marketplaces to start syncing data.</p>
+        <h1 className="font-display text-2xl font-800 text-white mb-1">Integraties</h1>
+        <p className="text-slate-400 text-sm">Koppel je webshops en marktplaatsen om data te synchroniseren.</p>
       </div>
 
       {error && (
@@ -111,116 +151,152 @@ export default function IntegrationsPage() {
         </div>
       )}
 
-      {/* Connected stores */}
+      {/* Gekoppelde winkels */}
       {connections.length > 0 && (
         <div className="mb-8">
-          <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-4">Connected stores</h2>
+          <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-4">Gekoppelde winkels</h2>
           <div className="space-y-3">
-            {connections.map(c => (
-              <div key={c.id} className="bg-slate-800/50 border border-slate-700/50 rounded-2xl p-5 flex items-center gap-4">
-                <div className={`w-10 h-10 rounded-xl border flex items-center justify-center font-display font-700 text-xs ${
-                  PLATFORMS.find(p => p.id === c.platform)?.color ?? 'bg-slate-700 text-slate-300'
-                }`}>
-                  {c.platform[0].toUpperCase()}
-                </div>
-                <div className="flex-1">
-                  <div className="font-medium text-white text-sm">{c.shop_name}</div>
-                  <div className="flex items-center gap-3 mt-1">
-                    <StatusBadge status={c.status} />
-                    {c.last_sync_at && (
-                      <span className="text-xs text-slate-500">
-                        Last sync: {new Date(c.last_sync_at).toLocaleDateString()}
-                      </span>
+            {connections.map((c: any) => {
+              const platformId = c.platformSlug ?? c.platform;
+              const platformMeta = PLATFORMS.find(p => p.id === platformId);
+              return (
+                <div key={c.id} className="bg-slate-800/50 border border-slate-700/50 rounded-2xl p-5 flex items-center gap-4">
+                  <div className={`w-10 h-10 rounded-xl border flex items-center justify-center font-display font-700 text-xs ${
+                    platformMeta?.color ?? 'bg-slate-700 border-slate-600 text-slate-300'
+                  }`}>
+                    {(platformMeta?.name ?? platformId).slice(0, 2).toUpperCase()}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-0.5">
+                      <span className="text-sm font-semibold text-white">{c.shopName ?? platformMeta?.name ?? platformId}</span>
+                      <StatusBadge status={c.status} />
+                    </div>
+                    <p className="text-xs text-slate-500 truncate">
+                      {c.shopDomain ?? c.platformName ?? platformMeta?.name}
+                      {c.lastSyncAt && ` · Gesynchroniseerd ${new Date(c.lastSyncAt).toLocaleDateString('nl-NL')}`}
+                      {c.ordersCount != null && ` · ${c.ordersCount} orders`}
+                    </p>
+                    {c.errorMessage && (
+                      <p className="text-xs text-rose-400 mt-0.5 truncate">{c.errorMessage}</p>
                     )}
                   </div>
-                  {c.last_error && (
-                    <p className="text-xs text-rose-400 mt-1">{c.last_error}</p>
-                  )}
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => handleSync(c.id)}
+                      disabled={syncing === c.id}
+                      className="p-2 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg transition-colors disabled:opacity-50"
+                      title="Synchroniseer nu"
+                    >
+                      <RefreshCw className={`w-4 h-4 ${syncing === c.id ? 'animate-spin' : ''}`} />
+                    </button>
+                    <button
+                      onClick={() => handleDisconnect(c.id)}
+                      className="p-2 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors"
+                      title="Ontkoppelen"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => handleSync(c.id)}
-                    disabled={syncing === c.id}
-                    className="w-8 h-8 rounded-lg bg-slate-700 hover:bg-slate-600 flex items-center justify-center text-slate-400 hover:text-white transition-colors disabled:opacity-50"
-                    title="Sync now"
-                  >
-                    <RefreshCw className={`w-3.5 h-3.5 ${syncing === c.id ? 'animate-spin' : ''}`} />
-                  </button>
-                  <button
-                    onClick={() => handleDisconnect(c.id)}
-                    className="w-8 h-8 rounded-lg bg-slate-700 hover:bg-rose-600/20 flex items-center justify-center text-slate-400 hover:text-rose-400 transition-colors"
-                    title="Disconnect"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}
 
-      {/* Available platforms */}
+      {/* Beschikbare platforms */}
       <div>
-        <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-4">Add platform</h2>
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-4">Platforms</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {PLATFORMS.map(platform => {
-            const isConnected = connectedPlatforms.has(platform.id);
+            const isConnected  = connectedPlatforms.has(platform.id);
             const isConnecting = connecting === platform.id;
 
             return (
-              <div key={platform.id} className="bg-slate-800/50 border border-slate-700/50 rounded-2xl p-5">
-                <div className="flex items-center justify-between mb-4">
-                  <div className={`w-10 h-10 rounded-xl border flex items-center justify-center font-display font-800 text-sm ${platform.color}`}>
-                    {platform.name[0]}
+              <div
+                key={platform.id}
+                className="bg-slate-800/50 border border-slate-700/50 rounded-2xl p-5"
+              >
+                <div className="flex items-center gap-3 mb-1">
+                  <div className={`w-9 h-9 rounded-xl border flex items-center justify-center font-display font-700 text-xs ${platform.color}`}>
+                    {platform.name.slice(0, 2).toUpperCase()}
                   </div>
-                  {isConnected && (
-                    <div className="flex items-center gap-1 text-xs text-emerald-400 font-medium">
-                      <CheckCircle className="w-3.5 h-3.5" />
-                      Connected
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-semibold text-white">{platform.name}</span>
+                      {isConnected && (
+                        <span className="text-xs text-emerald-400 flex items-center gap-1">
+                          <CheckCircle className="w-3 h-3" /> Gekoppeld
+                        </span>
+                      )}
                     </div>
-                  )}
+                  </div>
                 </div>
-                <h3 className="font-display font-700 text-white mb-1">{platform.name}</h3>
 
                 {platform.type === 'coming_soon' ? (
-                  <p className="text-xs text-slate-500">Coming soon</p>
+                  <p className="text-xs text-slate-500 mt-3">Binnenkort beschikbaar</p>
                 ) : isConnecting ? (
                   <div className="space-y-2 mt-3">
                     {platform.fields.map(field => (
                       <input
                         key={field}
-                        type={field.toLowerCase().includes('secret') || field.toLowerCase().includes('token') ? 'password' : 'text'}
+                        type={
+                          field.toLowerCase().includes('secret') || field.toLowerCase().includes('token')
+                            ? 'password'
+                            : 'text'
+                        }
                         placeholder={FIELD_LABELS[field] ?? field}
                         value={formData[field] ?? ''}
                         onChange={e => setFormData(prev => ({ ...prev, [field]: e.target.value }))}
                         className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
                       />
                     ))}
+                    {/* Bol.com help tekst */}
+                    {platform.id === 'bolcom' && (
+                      <p className="text-xs text-slate-500">
+                        Vind je Client ID en Secret op{' '}
+                        <a
+                          href="https://developer.bol.com"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-brand-400 hover:underline inline-flex items-center gap-0.5"
+                        >
+                          developer.bol.com <ExternalLink className="w-2.5 h-2.5" />
+                        </a>
+                      </p>
+                    )}
                     <div className="flex gap-2 pt-1">
                       <button
                         onClick={() => handleConnect(platform.id)}
-                        disabled={loading}
+                        disabled={loading || platform.fields.some(f => !formData[f]?.trim())}
                         className="flex-1 bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold py-2 rounded-lg transition-colors flex items-center justify-center gap-1 disabled:opacity-60"
                       >
                         {loading ? <Loader2 className="w-3 h-3 animate-spin" /> : null}
-                        Connect
+                        Verbinden
                       </button>
                       <button
-                        onClick={() => { setConnecting(null); setFormData({}); }}
+                        onClick={() => { setConnecting(null); setFormData({}); setError(''); }}
                         className="px-3 py-2 bg-slate-700 text-slate-400 text-xs rounded-lg hover:bg-slate-600 transition-colors"
                       >
-                        Cancel
+                        Annuleren
                       </button>
                     </div>
                   </div>
                 ) : (
                   <button
-                    onClick={() => platform.type === 'oauth' ? handleShopifyInstall() : setConnecting(platform.id)}
+                    onClick={() => {
+                      if (platform.type === 'oauth') {
+                        handleOAuthConnect(platform.id);
+                      } else {
+                        setConnecting(platform.id);
+                        setFormData({});
+                        setError('');
+                      }
+                    }}
                     className="mt-3 w-full flex items-center justify-center gap-1.5 bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-white text-xs font-medium py-2 rounded-lg transition-colors"
                   >
                     <Plus className="w-3.5 h-3.5" />
-                    {isConnected ? 'Add another' : 'Connect'}
+                    {isConnected ? 'Nog een toevoegen' : 'Koppelen'}
                   </button>
                 )}
               </div>
