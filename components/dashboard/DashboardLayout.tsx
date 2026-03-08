@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
   LayoutDashboard, TrendingUp, ShoppingBag, Megaphone,
-  Plug, Settings, LogOut, Zap, Bell, ChevronDown, Menu, X
+  Plug, Settings, LogOut, Zap, Bell, Menu
 } from 'lucide-react';
 import { useAuthStore } from '@/lib/store';
 import { api } from '@/lib/api';
@@ -16,7 +16,7 @@ const navItems = [
   { label: 'Products',     href: '/dashboard/products',     icon: ShoppingBag },
   { label: 'Advertising',  href: '/dashboard/ads',          icon: Megaphone },
   { label: 'Integrations', href: '/dashboard/integrations', icon: Plug },
-  { label: 'Settings',     href: '/dashboard/settings',     icon: Settings },
+  { label: 'Settings',     href: '/settings',               icon: Settings },  // ← fixed
 ];
 
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -47,7 +47,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
       <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
         {navItems.map(item => {
           const active = pathname === item.href ||
-            (item.href !== '/dashboard' && pathname.startsWith(item.href));
+            (item.href !== '/dashboard' && item.href !== '/settings' && pathname.startsWith(item.href));
           return (
             <Link
               key={item.href}
@@ -76,7 +76,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
             <div className="text-xs font-medium text-white truncate">
               {user?.firstName} {user?.lastName}
             </div>
-            <div className="text-xs text-slate-500 capitalize">{user?.planSlug} plan</div>
+            <div className="text-xs text-slate-500 capitalize">{user?.planSlug ?? 'starter'} plan</div>
           </div>
         </div>
         <button
