@@ -81,14 +81,22 @@ export default function SettingsPage() {
   const handleSaveProfile = async () => {
     setProfileLoading(true);
     try {
-      await api.patch('/auth/profile', { firstName, lastName });
-      // Update local store zo dat sidebar ook meteen bijwerkt
+      const res = await api.patch('/auth/profile', { firstName, lastName });
+      // Gebruik response data (bevestigd door backend) om store bij te werken
+      const saved = res.data;
       if (user && accessToken) {
-        setAuth({ ...user, firstName, lastName }, accessToken);
+        setAuth({
+          ...user,
+          firstName: saved.firstName ?? firstName,
+          lastName:  saved.lastName  ?? lastName,
+        }, accessToken);
       }
-      showToast('success', 'Profiel bijgewerkt!');
+      // Sync lokale state met opgeslagen waarden
+      setFirstName(saved.firstName ?? firstName);
+      setLastName(saved.lastName   ?? lastName);
+      showToast('success', 'Profiel opgeslagen!');
     } catch (e: any) {
-      showToast('error', e.response?.data?.message ?? 'Er ging iets mis.');
+      showToast('error', e.response?.data?.message ?? 'Er ging iets mis. Controleer de verbinding.');
     } finally { setProfileLoading(false); }
   };
 
