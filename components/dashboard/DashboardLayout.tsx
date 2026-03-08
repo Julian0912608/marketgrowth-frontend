@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
   LayoutDashboard, TrendingUp, ShoppingBag, Megaphone,
-  Plug, Settings, LogOut, Zap, Bell, Menu
+  Plug, Settings, LogOut, Zap, Bell, Menu, Sparkles
 } from 'lucide-react';
 import { useAuthStore } from '@/lib/store';
 import { api } from '@/lib/api';
@@ -15,8 +15,9 @@ const navItems = [
   { label: 'Sales',        href: '/dashboard/analytics',    icon: TrendingUp },
   { label: 'Products',     href: '/dashboard/products',     icon: ShoppingBag },
   { label: 'Advertising',  href: '/dashboard/ads',          icon: Megaphone },
+  { label: 'AI Insights',  href: '/dashboard/ai-insights',  icon: Sparkles },
   { label: 'Integrations', href: '/dashboard/integrations', icon: Plug },
-  { label: 'Settings',     href: '/settings',               icon: Settings },  // ← fixed
+  { label: 'Settings',     href: '/settings',               icon: Settings },
 ];
 
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -46,7 +47,8 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
       {/* Nav */}
       <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
         {navItems.map(item => {
-          const active = pathname === item.href ||
+          const active =
+            pathname === item.href ||
             (item.href !== '/dashboard' && item.href !== '/settings' && pathname.startsWith(item.href));
           return (
             <Link
@@ -109,18 +111,13 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Top bar */}
         <header className="flex items-center justify-between px-6 py-4 border-b border-slate-800 bg-slate-950">
-          <button
-            className="lg:hidden text-slate-400 hover:text-white"
-            onClick={() => setSidebarOpen(true)}
-          >
+          <button className="lg:hidden text-slate-400 hover:text-white" onClick={() => setSidebarOpen(true)}>
             <Menu className="w-5 h-5" />
           </button>
           <div className="flex-1" />
-          <div className="flex items-center gap-3">
-            <button className="relative w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center text-slate-400 hover:text-white transition-colors">
-              <Bell className="w-4 h-4" />
-            </button>
-          </div>
+          <button className="relative w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center text-slate-400 hover:text-white transition-colors">
+            <Bell className="w-4 h-4" />
+          </button>
         </header>
 
         {/* Page content */}
