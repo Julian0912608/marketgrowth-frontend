@@ -3,14 +3,12 @@
 // ============================================================
 // app/onboarding/page.tsx  (FIXED)
 //
-// Fixes:
-//  1. handlePlanStep: markeer 'plan_selected' in DB vóór Stripe redirect
-//     zodat de onboarding state correct is als de klant terugkomt
-//  2. payment-success verwerking: lees session_id uit URL en bevestig
-//  3. Duidelijkere error messages per stap
+// useSearchParams() moet in een Suspense boundary zitten in Next.js 13+.
+// Oplossing: split in <OnboardingInner> (gebruikt useSearchParams)
+// en een default export die dat wrapet in <Suspense>.
 // ============================================================
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Check, Zap, ArrowRight, Loader2, AlertCircle } from 'lucide-react';
 import { api } from '@/lib/api';
@@ -27,7 +25,7 @@ const plans = [
   { slug: 'scale',   name: 'Scale',    price: '€249/mo', desc: 'Unlimited stores & credits' },
 ];
 
-export default function OnboardingPage() {
+function OnboardingInner() {
   const router       = useRouter();
   const searchParams = useSearchParams();
 
@@ -253,5 +251,19 @@ export default function OnboardingPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+// Suspense boundary is vereist door Next.js omdat useSearchParams()
+// alleen client-side werkt en niet tijdens static prerendering.
+export default function OnboardingPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-surface-50 flex items-center justify-center">
+        <Loader2 className="w-6 h-6 text-brand-600 animate-spin" />
+      </div>
+    }>
+      <OnboardingInner />
+    </Suspense>
   );
 }
