@@ -75,7 +75,7 @@ export default function AnalyticsPage() {
           api.get(`/analytics/overview?period=${period}`),
           api.get(`/analytics/daily?period=${period}`),
           api.get(`/analytics/by-platform?period=${period}`),
-          api.get('/analytics/top-products?limit=10'),
+          api.get(`/analytics/top-products?limit=10&period=${period}`),
         ]);
         setOverview(ov.data);
         setDaily(da.data.data ?? []);
