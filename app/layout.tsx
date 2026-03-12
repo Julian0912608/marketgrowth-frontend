@@ -4,8 +4,8 @@ import { SpeedInsights } from '@vercel/speed-insights/next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'MarketGrowth — AI-Powered Ecommerce Intelligence',
-  description: 'The all-in-one AI platform for ecommerce entrepreneurs.',
+  title: 'MarketGrow — AI-Powered Ecommerce Intelligence',
+  description: 'The all-in-one AI platform for ecommerce entrepreneurs. Connect Shopify, Amazon, Bol.com and more.',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
