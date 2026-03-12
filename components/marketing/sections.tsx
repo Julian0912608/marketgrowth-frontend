@@ -2,49 +2,305 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { ArrowRight, Check, ChevronDown, Zap } from 'lucide-react';
+import { ArrowRight, Check, ChevronDown, Zap, TrendingUp, BarChart3, Lightbulb, Sparkles, ExternalLink } from 'lucide-react';
 
-// ── Demo ──────────────────────────────────────────────────────
-export function Demo() {
+// ── Platform logos (inline SVG) ───────────────────────────────
+const platforms = [
+  { name: 'Shopify',      color: '#96bf47', letter: 'S' },
+  { name: 'WooCommerce',  color: '#7F54B3', letter: 'W' },
+  { name: 'Amazon',       color: '#FF9900', letter: 'A' },
+  { name: 'Etsy',         color: '#F56400', letter: 'E' },
+  { name: 'Meta Ads',     color: '#0082FB', letter: 'M' },
+  { name: 'Google Ads',   color: '#4285F4', letter: 'G' },
+  { name: 'TikTok Ads',   color: '#010101', letter: 'T' },
+];
+
+// ── Platform connections ──────────────────────────────────────
+export function PlatformBar() {
+  return (
+    <section className="py-14 border-y border-slate-100 bg-white">
+      <div className="max-w-7xl mx-auto px-6">
+        <p className="text-center text-xs font-semibold uppercase tracking-widest text-slate-400 mb-10">
+          One dashboard for all your ecommerce data
+        </p>
+        <div className="flex flex-wrap items-center justify-center gap-x-10 gap-y-6">
+          {platforms.map(p => (
+            <div key={p.name} className="flex flex-col items-center gap-2 group cursor-default">
+              <div
+                className="w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-sm opacity-60 group-hover:opacity-100 transition-opacity"
+                style={{ backgroundColor: p.color }}
+              >
+                {p.letter}
+              </div>
+              <span className="text-xs text-slate-400 group-hover:text-slate-600 font-medium transition-colors">{p.name}</span>
+            </div>
+          ))}
+        </div>
+        <p className="text-center text-sm text-slate-400 mt-8">
+          All your revenue, ROAS, and product data — unified in seconds.
+          <span className="text-slate-500 font-medium"> More integrations coming soon.</span>
+        </p>
+      </div>
+    </section>
+  );
+}
+
+// ── Product Performance ───────────────────────────────────────
+export function ProductPerformance() {
+  return (
+    <section id="features" className="py-24 bg-slate-50">
+      <div className="max-w-7xl mx-auto px-6">
+        <div className="grid lg:grid-cols-2 gap-16 items-center">
+          <div>
+            <div className="inline-flex items-center gap-2 bg-brand-50 text-brand-700 text-xs font-semibold px-3 py-1.5 rounded-full mb-4">
+              <BarChart3 className="w-3.5 h-3.5" />
+              Product performance
+            </div>
+            <h2 className="font-display text-4xl font-800 text-slate-900 mb-4 leading-tight">
+              See which products perform best across every platform
+            </h2>
+            <p className="text-slate-500 text-lg leading-relaxed">
+              Stop guessing where your products convert best. MarketGrow shows you real performance data across all your stores and marketplaces — side by side.
+            </p>
+          </div>
+
+          {/* Mock product card */}
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+              <div>
+                <p className="text-xs text-slate-400 mb-0.5">Product</p>
+                <p className="font-display font-700 text-slate-900">Hydrating Face Serum</p>
+              </div>
+              <span className="text-xs bg-emerald-50 text-emerald-700 font-semibold px-2.5 py-1 rounded-full border border-emerald-100">
+                Trending ↑
+              </span>
+            </div>
+
+            <div className="p-6 space-y-4">
+              {[
+                { platform: 'Amazon',       color: '#FF9900', letter: 'A', cr: '8.1', revenue: '€4,200', bar: 81 },
+                { platform: 'TikTok Shop',  color: '#010101', letter: 'T', cr: '5.6', revenue: '€2,100', bar: 56 },
+                { platform: 'Shopify',      color: '#96bf47', letter: 'S', cr: '2.4', revenue: '€1,800', bar: 24 },
+              ].map(row => (
+                <div key={row.platform}>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-6 h-6 rounded-md flex items-center justify-center text-white text-xs font-bold" style={{ backgroundColor: row.color }}>
+                        {row.letter}
+                      </div>
+                      <span className="text-sm font-medium text-slate-700">{row.platform}</span>
+                    </div>
+                    <div className="flex items-center gap-4 text-sm">
+                      <span className="text-slate-500">CR <span className="font-semibold text-slate-900">{row.cr}%</span></span>
+                      <span className="text-slate-500">{row.revenue}</span>
+                    </div>
+                  </div>
+                  <div className="h-1.5 bg-slate-100 rounded-full">
+                    <div className="h-1.5 rounded-full bg-brand-500" style={{ width: `${row.bar}%` }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* AI insight */}
+            <div className="mx-6 mb-6 bg-brand-50 border border-brand-100 rounded-xl p-4 flex gap-3">
+              <Sparkles className="w-4 h-4 text-brand-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-xs font-semibold text-brand-700 mb-0.5">AI insight</p>
+                <p className="text-sm text-brand-800">Amazon shows the highest conversion rate for this product. Consider increasing Amazon ad spend.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ── Marketing Insights ────────────────────────────────────────
+export function MarketingInsights() {
+  return (
+    <section className="py-24 bg-white">
+      <div className="max-w-7xl mx-auto px-6">
+        <div className="grid lg:grid-cols-2 gap-16 items-center">
+
+          {/* Mock marketing card */}
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden order-2 lg:order-1">
+            <div className="px-6 py-4 border-b border-slate-100">
+              <p className="text-xs text-slate-400 mb-0.5">Campaign overview</p>
+              <p className="font-display font-700 text-slate-900">Q1 Ad performance</p>
+            </div>
+
+            <div className="p-6 space-y-4">
+              {[
+                { platform: 'Meta Ads',    color: '#0082FB', letter: 'M', roas: 3.8, spend: '€1,200', bar: 76 },
+                { platform: 'Google Ads',  color: '#4285F4', letter: 'G', roas: 2.1, spend: '€900',   bar: 42 },
+                { platform: 'TikTok Ads',  color: '#010101', letter: 'T', roas: 1.4, spend: '€600',   bar: 28 },
+              ].map(row => (
+                <div key={row.platform}>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-6 h-6 rounded-md flex items-center justify-center text-white text-xs font-bold" style={{ backgroundColor: row.color }}>
+                        {row.letter}
+                      </div>
+                      <span className="text-sm font-medium text-slate-700">{row.platform}</span>
+                    </div>
+                    <div className="flex items-center gap-4 text-sm">
+                      <span className="text-slate-500">ROAS <span className={`font-semibold ${row.roas >= 3 ? 'text-emerald-600' : 'text-slate-900'}`}>{row.roas}×</span></span>
+                      <span className="text-slate-500">{row.spend}</span>
+                    </div>
+                  </div>
+                  <div className="h-1.5 bg-slate-100 rounded-full">
+                    <div className="h-1.5 rounded-full" style={{ width: `${row.bar}%`, backgroundColor: row.color }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* AI insight */}
+            <div className="mx-6 mb-6 bg-brand-50 border border-brand-100 rounded-xl p-4 flex gap-3">
+              <Sparkles className="w-4 h-4 text-brand-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-xs font-semibold text-brand-700 mb-0.5">AI insight</p>
+                <p className="text-sm text-brand-800">Meta campaigns generate the highest return for this product category. TikTok Ads ROAS is below break-even — consider pausing.</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="order-1 lg:order-2">
+            <div className="inline-flex items-center gap-2 bg-violet-50 text-violet-700 text-xs font-semibold px-3 py-1.5 rounded-full mb-4">
+              <TrendingUp className="w-3.5 h-3.5" />
+              Marketing insights
+            </div>
+            <h2 className="font-display text-4xl font-800 text-slate-900 mb-4 leading-tight">
+              Understand which campaigns actually drive revenue
+            </h2>
+            <p className="text-slate-500 text-lg leading-relaxed">
+              ROAS per campaign, winning audiences, ad fatigue detection. Know exactly where to spend more and where to cut — before the money is wasted.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ── AI Growth Opportunities ───────────────────────────────────
+export function GrowthOpportunities() {
+  const opportunities = [
+    { icon: '📈', action: 'Scale Amazon ads for Hydrating Face Serum', reason: 'ROAS 4.8× — highest in portfolio', tag: 'Scale', tagColor: 'bg-emerald-50 text-emerald-700 border-emerald-100' },
+    { icon: '⏸️', action: 'Pause Meta ad set B — Summer Collection', reason: 'ROAS 0.8× for 14 days — below break-even', tag: 'Pause', tagColor: 'bg-rose-50 text-rose-700 border-rose-100' },
+    { icon: '🧪', action: 'Test TikTok campaign for Vitamin C Serum', reason: 'High search volume, no TikTok presence yet', tag: 'Test', tagColor: 'bg-amber-50 text-amber-700 border-amber-100' },
+    { icon: '🚀', action: 'Launch Shopify bundle: Serum + Moisturizer', reason: 'AOV opportunity — frequently bought together', tag: 'Launch', tagColor: 'bg-brand-50 text-brand-700 border-brand-100' },
+  ];
+
   return (
     <section id="demo" className="py-24 bg-slate-50">
       <div className="max-w-7xl mx-auto px-6">
-        <div className="max-w-xl mb-12">
-          <div className="inline-flex items-center gap-2 bg-slate-100 text-slate-600 text-xs font-semibold px-3 py-1.5 rounded-full mb-4">
-            How it works
+        <div className="max-w-2xl mx-auto text-center mb-12">
+          <div className="inline-flex items-center gap-2 bg-amber-50 text-amber-700 text-xs font-semibold px-3 py-1.5 rounded-full mb-4">
+            <Lightbulb className="w-3.5 h-3.5" />
+            AI growth opportunities
           </div>
           <h2 className="font-display text-4xl sm:text-5xl font-800 text-slate-900 mb-4">
-            Up and running in minutes
+            MarketGrow tells you exactly what to do next
           </h2>
-          <p className="text-slate-500 text-lg">No complex setup. No developer needed.</p>
+          <p className="text-slate-500 text-lg">
+            Every day, our AI analyses your data and surfaces the highest-impact actions you can take right now.
+          </p>
         </div>
 
-        <div className="grid lg:grid-cols-2 gap-12 items-center">
-          <div className="space-y-8">
-            {[
-              { step: '01', title: 'Connect your store', desc: 'Link Shopify, WooCommerce, Bol.com or any platform in one click. No developer needed.' },
-              { step: '02', title: 'AI analyses your data', desc: 'MarketGrow imports your full order history and starts identifying patterns, peaks, and opportunities.' },
-              { step: '03', title: 'Get actionable insights', desc: 'Your personalized dashboard and AI recommendations are ready. Start making smarter decisions today.' },
-            ].map(s => (
-              <div key={s.step} className="flex gap-4">
-                <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-brand-600 text-white font-display font-700 text-sm flex items-center justify-center">
-                  {s.step}
-                </div>
-                <div>
-                  <h3 className="font-display font-700 text-slate-900 mb-1">{s.title}</h3>
-                  <p className="text-sm text-slate-500 leading-relaxed">{s.desc}</p>
-                </div>
-              </div>
-            ))}
+        <div className="max-w-3xl mx-auto space-y-3">
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-sm font-semibold text-slate-700">Daily growth opportunities</p>
+            <span className="text-xs bg-brand-600 text-white px-2.5 py-1 rounded-full font-semibold">4 new today</span>
           </div>
 
-          <div className="relative bg-slate-900 rounded-2xl overflow-hidden aspect-video flex items-center justify-center">
-            <div className="absolute inset-0 bg-gradient-to-br from-brand-900/80 to-slate-900" />
-            <div className="relative text-center">
-              <div className="w-16 h-16 rounded-full bg-white/10 border border-white/20 flex items-center justify-center mx-auto mb-4 cursor-pointer hover:bg-white/20 transition-colors">
-                <div className="w-0 h-0 border-t-8 border-b-8 border-l-12 border-transparent border-l-white ml-1" />
+          {opportunities.map((op, i) => (
+            <div key={i} className="bg-white rounded-xl border border-slate-200 p-4 flex items-center gap-4 hover:shadow-md transition-shadow">
+              <div className="text-2xl flex-shrink-0">{op.icon}</div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1">
+                  <p className="text-sm font-semibold text-slate-900">{op.action}</p>
+                  <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border flex-shrink-0 ${op.tagColor}`}>{op.tag}</span>
+                </div>
+                <p className="text-xs text-slate-500">{op.reason}</p>
               </div>
-              <p className="text-white/60 text-sm">Watch 2-min demo</p>
+              <button className="flex-shrink-0 flex items-center gap-1.5 text-xs font-semibold text-brand-600 hover:text-brand-700 border border-brand-200 hover:border-brand-300 px-3 py-1.5 rounded-lg transition-colors">
+                View <ExternalLink className="w-3 h-3" />
+              </button>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ── AI Ad Creative ────────────────────────────────────────────
+export function AdCreative() {
+  return (
+    <section className="py-24 bg-white">
+      <div className="max-w-7xl mx-auto px-6">
+        <div className="grid lg:grid-cols-2 gap-16 items-center">
+          <div>
+            <div className="inline-flex items-center gap-2 bg-rose-50 text-rose-700 text-xs font-semibold px-3 py-1.5 rounded-full mb-4">
+              <Sparkles className="w-3.5 h-3.5" />
+              AI ad creative
+            </div>
+            <h2 className="font-display text-4xl font-800 text-slate-900 mb-4 leading-tight">
+              Generate new ad ideas based on what actually works
+            </h2>
+            <p className="text-slate-500 text-lg leading-relaxed">
+              MarketGrow analyses your top-performing ads and products, then suggests fresh creative angles — so you never run out of ideas.
+            </p>
+          </div>
+
+          {/* Mock ad creative card */}
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+              <div>
+                <p className="text-xs text-slate-400 mb-0.5">Product</p>
+                <p className="font-display font-700 text-slate-900">Hydrating Face Serum</p>
+              </div>
+              <span className="text-xs bg-rose-50 text-rose-700 font-semibold px-2.5 py-1 rounded-full border border-rose-100">AI generated</span>
+            </div>
+
+            <div className="p-6">
+              {/* Top angle */}
+              <div className="mb-5">
+                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Top performing angle</p>
+                <div className="bg-gradient-to-r from-brand-50 to-violet-50 border border-brand-100 rounded-xl p-4">
+                  <p className="font-display font-700 text-slate-900 text-lg">"Hydrates skin in 24 hours"</p>
+                  <div className="flex items-center gap-2 mt-2">
+                    <span className="text-xs text-slate-500">Used in 3 top ads</span>
+                    <span className="text-xs font-semibold text-emerald-600">• Avg ROAS 4.1×</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Suggested concepts */}
+              <div>
+                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Suggested ad concepts</p>
+                <div className="space-y-2">
+                  {[
+                    { concept: 'Before / after hydration test', format: 'Video · 15s', score: '94' },
+                    { concept: 'Dermatologist reaction video',   format: 'Video · 30s', score: '89' },
+                    { concept: 'Morning routine format',         format: 'Carousel',    score: '82' },
+                  ].map((item, i) => (
+                    <div key={i} className="flex items-center justify-between bg-slate-50 rounded-lg px-4 py-3">
+                      <div>
+                        <p className="text-sm font-medium text-slate-800">{item.concept}</p>
+                        <p className="text-xs text-slate-400 mt-0.5">{item.format}</p>
+                      </div>
+                      <div className="text-right flex-shrink-0 ml-4">
+                        <div className="text-sm font-bold text-brand-600">{item.score}</div>
+                        <div className="text-xs text-slate-400">score</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -56,115 +312,51 @@ export function Demo() {
 // ── Pricing ───────────────────────────────────────────────────
 const plans = [
   {
-    slug:     'starter',
-    name:     'Starter',
-    price:    49,
-    desc:     'Perfect for solo entrepreneurs just getting started.',
-    features: [
-      '1 connected store',
-      '500 AI credits / month',
-      'Sales dashboard',
-      'Weekly AI report',
-      'Email support',
-    ],
-    cta:      'Start free trial',
-    popular:  false,
+    slug: 'starter', name: 'Starter', price: 49, popular: false,
+    desc: 'Perfect for solo entrepreneurs just getting started.',
+    features: ['1 connected store', '500 AI credits / month', 'Sales dashboard', 'Weekly AI report', 'Email support'],
+    cta: 'Start free trial',
   },
   {
-    slug:     'growth',
-    name:     'Growth',
-    price:    99,
-    desc:     'For growing stores that need deeper insights.',
-    features: [
-      '3 connected stores',
-      '5,000 AI credits / month',
-      'Everything in Starter',
-      'Daily AI insights',
-      'Smart alerts',
-      'Priority support',
-    ],
-    cta:      'Start free trial',
-    popular:  true,
+    slug: 'growth', name: 'Growth', price: 99, popular: true,
+    desc: 'For growing stores that need deeper insights.',
+    features: ['3 connected stores', '5,000 AI credits / month', 'Everything in Starter', 'Daily AI insights', 'Smart alerts', 'Priority support'],
+    cta: 'Start free trial',
   },
   {
-    slug:     'scale',
-    name:     'Scale',
-    price:    249,
-    desc:     'For established brands and agencies managing multiple stores.',
-    features: [
-      'Unlimited stores',
-      'Unlimited AI credits',
-      'Everything in Growth',
-      'Custom AI recommendations',
-      'API access',
-      'Dedicated account manager',
-    ],
-    cta:      'Contact sales',
-    popular:  false,
+    slug: 'scale', name: 'Scale', price: 249, popular: false,
+    desc: 'For established brands and agencies managing multiple stores.',
+    features: ['Unlimited stores', 'Unlimited AI credits', 'Everything in Growth', 'Custom AI recommendations', 'API access', 'Dedicated account manager'],
+    cta: 'Contact sales',
   },
 ];
 
 export function Pricing() {
   const [annual, setAnnual] = useState(true);
-
   return (
-    <section id="pricing" className="py-24 bg-white">
+    <section id="pricing" className="py-24 bg-slate-50">
       <div className="max-w-7xl mx-auto px-6">
         <div className="max-w-2xl mx-auto text-center mb-12">
-          <div className="inline-flex items-center gap-2 bg-slate-100 text-slate-600 text-xs font-semibold px-3 py-1.5 rounded-full mb-4">
-            Simple pricing
-          </div>
-          <h2 className="font-display text-4xl sm:text-5xl font-800 text-slate-900 mb-4">
-            Grow without surprises
-          </h2>
+          <div className="inline-flex items-center gap-2 bg-slate-100 text-slate-600 text-xs font-semibold px-3 py-1.5 rounded-full mb-4">Simple pricing</div>
+          <h2 className="font-display text-4xl sm:text-5xl font-800 text-slate-900 mb-4">Grow without surprises</h2>
           <p className="text-slate-500 text-lg mb-8">Start free for 14 days. No credit card required.</p>
-
-          <div className="inline-flex items-center gap-3 bg-slate-100 rounded-xl p-1">
-            <button
-              onClick={() => setAnnual(false)}
-              className={`px-4 py-2 text-sm font-medium rounded-lg transition-all ${!annual ? 'bg-white shadow text-slate-900' : 'text-slate-500'}`}
-            >
-              Monthly
-            </button>
-            <button
-              onClick={() => setAnnual(true)}
-              className={`px-4 py-2 text-sm font-medium rounded-lg transition-all ${annual ? 'bg-white shadow text-slate-900' : 'text-slate-500'}`}
-            >
-              Annual <span className="text-emerald-600 font-semibold">−20%</span>
-            </button>
+          <div className="inline-flex items-center gap-3 bg-white rounded-xl p-1 border border-slate-200">
+            <button onClick={() => setAnnual(false)} className={`px-4 py-2 text-sm font-medium rounded-lg transition-all ${!annual ? 'bg-brand-600 text-white shadow' : 'text-slate-500'}`}>Monthly</button>
+            <button onClick={() => setAnnual(true)}  className={`px-4 py-2 text-sm font-medium rounded-lg transition-all ${annual  ? 'bg-brand-600 text-white shadow' : 'text-slate-500'}`}>Annual <span className={annual ? 'text-brand-200' : 'text-emerald-600'}>−20%</span></button>
           </div>
         </div>
-
         <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
           {plans.map(plan => {
             const price = annual ? Math.round(plan.price * 0.8) : plan.price;
             return (
-              <div
-                key={plan.slug}
-                className={`relative rounded-2xl p-6 flex flex-col ${
-                  plan.popular
-                    ? 'bg-brand-600 text-white shadow-xl shadow-brand-600/30'
-                    : 'bg-white border border-slate-200'
-                }`}
-              >
-                {plan.popular && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-amber-400 text-amber-900 text-xs font-bold px-3 py-1 rounded-full">
-                    Most popular
-                  </div>
-                )}
-                <div className="mb-6">
-                  <h3 className={`font-display font-700 text-lg mb-1 ${plan.popular ? 'text-white' : 'text-slate-900'}`}>
-                    {plan.name}
-                  </h3>
-                  <p className={`text-sm mb-4 ${plan.popular ? 'text-brand-100' : 'text-slate-500'}`}>{plan.desc}</p>
-                  <div className="flex items-baseline gap-1">
-                    <span className={`font-display text-4xl font-800 ${plan.popular ? 'text-white' : 'text-slate-900'}`}>
-                      €{price}
-                    </span>
-                    <span className={`text-sm ${plan.popular ? 'text-brand-200' : 'text-slate-400'}`}>/mo</span>
-                  </div>
+              <div key={plan.slug} className={`relative rounded-2xl p-6 flex flex-col ${plan.popular ? 'bg-brand-600 text-white shadow-xl shadow-brand-600/30' : 'bg-white border border-slate-200'}`}>
+                {plan.popular && <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-amber-400 text-amber-900 text-xs font-bold px-3 py-1 rounded-full">Most popular</div>}
+                <h3 className={`font-display font-700 text-lg mb-1 ${plan.popular ? 'text-white' : 'text-slate-900'}`}>{plan.name}</h3>
+                <p className={`text-sm mb-4 ${plan.popular ? 'text-brand-100' : 'text-slate-500'}`}>{plan.desc}</p>
+                <div className="flex items-baseline gap-1 mb-6">
+                  <span className={`font-display text-4xl font-800 ${plan.popular ? 'text-white' : 'text-slate-900'}`}>€{price}</span>
+                  <span className={`text-sm ${plan.popular ? 'text-brand-200' : 'text-slate-400'}`}>/mo</span>
                 </div>
-
                 <ul className="space-y-3 flex-1 mb-6">
                   {plan.features.map(f => (
                     <li key={f} className="flex items-center gap-2.5 text-sm">
@@ -173,17 +365,7 @@ export function Pricing() {
                     </li>
                   ))}
                 </ul>
-
-                <Link
-                  href={plan.slug === 'scale' ? '/contact' : `/register?plan=${plan.slug}`}
-                  className={`block text-center py-3 rounded-xl font-semibold text-sm transition-all ${
-                    plan.popular
-                      ? 'bg-white text-brand-600 hover:bg-brand-50'
-                      : 'bg-brand-600 text-white hover:bg-brand-700'
-                  }`}
-                >
-                  {plan.cta}
-                </Link>
+                <Link href={plan.slug === 'scale' ? '/contact' : `/register?plan=${plan.slug}`} className={`block text-center py-3 rounded-xl font-semibold text-sm transition-all ${plan.popular ? 'bg-white text-brand-600 hover:bg-brand-50' : 'bg-brand-600 text-white hover:bg-brand-700'}`}>{plan.cta}</Link>
               </div>
             );
           })}
@@ -194,49 +376,25 @@ export function Pricing() {
 }
 
 // ── Testimonials ──────────────────────────────────────────────
-const testimonials = [
-  {
-    name:    'Sarah van den Berg',
-    role:    'Founder, Bloom & Co',
-    content: 'MarketGrow changed how I run my store. I used to spend hours in spreadsheets. Now I check my dashboard for 5 minutes and know exactly what to focus on.',
-    avatar:  'SB',
-    color:   'bg-rose-100 text-rose-700',
-  },
-  {
-    name:    'Thomas Müller',
-    role:    'CEO, TechGadgets GmbH',
-    content: "The AI insights are genuinely useful. It flagged a drop in repeat purchases 2 weeks before I would have noticed it myself. That alone paid for a year's subscription.",
-    avatar:  'TM',
-    color:   'bg-brand-100 text-brand-700',
-  },
-  {
-    name:    'Priya Sharma',
-    role:    'Head of Ecommerce, StyleHub',
-    content: 'We manage 4 stores across different markets. Having everything in one dashboard with unified AI reporting has been a game changer for our team.',
-    avatar:  'PS',
-    color:   'bg-violet-100 text-violet-700',
-  },
-];
-
 export function Testimonials() {
+  const testimonials = [
+    { name: 'Sarah van den Berg', role: 'Founder, Bloom & Co',       avatar: 'SB', color: 'bg-rose-100 text-rose-700',     content: 'MarketGrow changed how I run my store. I used to spend hours in spreadsheets. Now I check my dashboard for 5 minutes and know exactly what to focus on.' },
+    { name: 'Thomas Müller',      role: 'CEO, TechGadgets GmbH',     avatar: 'TM', color: 'bg-brand-100 text-brand-700',   content: 'The AI insights are genuinely useful. It flagged a drop in repeat purchases 2 weeks before I would have noticed it myself. That alone paid for a year\'s subscription.' },
+    { name: 'Priya Sharma',       role: 'Head of Ecommerce, StyleHub', avatar: 'PS', color: 'bg-violet-100 text-violet-700', content: 'We manage 4 stores across different markets. Having everything in one dashboard with unified AI reporting has been a game changer for our team.' },
+  ];
   return (
-    <section id="testimonials" className="py-24 bg-surface-50">
+    <section id="testimonials" className="py-24 bg-white">
       <div className="max-w-7xl mx-auto px-6">
         <div className="max-w-xl mx-auto text-center mb-16">
-          <h2 className="font-display text-4xl sm:text-5xl font-800 text-slate-900 mb-4">
-            Trusted by 2,400+ stores
-          </h2>
+          <h2 className="font-display text-4xl sm:text-5xl font-800 text-slate-900 mb-4">Trusted by 2,400+ stores</h2>
           <p className="text-slate-500 text-lg">Don't take our word for it.</p>
         </div>
-
         <div className="grid md:grid-cols-3 gap-6">
           {testimonials.map(t => (
-            <div key={t.name} className="bg-white rounded-2xl border border-slate-100 p-6 flex flex-col gap-4">
+            <div key={t.name} className="bg-slate-50 rounded-2xl border border-slate-100 p-6 flex flex-col gap-4">
               <p className="text-slate-600 leading-relaxed text-sm flex-1">"{t.content}"</p>
               <div className="flex items-center gap-3">
-                <div className={`w-9 h-9 rounded-full ${t.color} flex items-center justify-center font-display font-700 text-xs`}>
-                  {t.avatar}
-                </div>
+                <div className={`w-9 h-9 rounded-full ${t.color} flex items-center justify-center font-display font-700 text-xs`}>{t.avatar}</div>
                 <div>
                   <div className="font-semibold text-slate-900 text-sm">{t.name}</div>
                   <div className="text-xs text-slate-400">{t.role}</div>
@@ -252,45 +410,31 @@ export function Testimonials() {
 
 // ── FAQ ───────────────────────────────────────────────────────
 const faqs = [
-  { q: 'Which platforms does MarketGrow support?',      a: 'We support Shopify, WooCommerce, Amazon, Bol.com, Meta Ads, Google Ads, Etsy and more. New integrations are added regularly.' },
-  { q: 'Is my data secure?',                            a: 'Yes. All data is encrypted in transit and at rest. Each account is fully isolated — no data is ever shared between customers.' },
-  { q: 'Can I cancel my subscription at any time?',     a: 'Absolutely. Cancel anytime from your account settings. If you cancel, you keep access until the end of your billing period.' },
-  { q: 'What are AI credits?',                          a: 'AI credits power features like insight generation, recommendations, and automated reports. Unused credits do not roll over.' },
-  { q: 'Do you offer a free trial?',                    a: 'Yes — all plans include a 14-day free trial. No credit card required to start.' },
-  { q: 'What happens if I exceed my AI credit limit?',  a: "Your dashboard continues to work normally. AI-powered features pause until the next billing cycle — we'll notify you before that happens." },
+  { q: 'Which platforms does MarketGrow support?',     a: 'Shopify, WooCommerce, Amazon, Bol.com, Etsy, Meta Ads, Google Ads, TikTok Ads and more. New integrations are added regularly.' },
+  { q: 'Is my data secure?',                           a: 'Yes. All data is encrypted in transit and at rest. Each account is fully isolated — no data is ever shared between customers.' },
+  { q: 'Can I cancel my subscription at any time?',    a: 'Absolutely. Cancel anytime from your account settings. You keep access until the end of your billing period.' },
+  { q: 'What are AI credits?',                         a: 'AI credits power insight generation, recommendations, and automated reports. Unused credits do not roll over.' },
+  { q: 'Do you offer a free trial?',                   a: 'Yes — all plans include a 14-day free trial. No credit card required to start.' },
+  { q: 'What happens if I exceed my AI credit limit?', a: "Your dashboard continues to work normally. AI-powered features pause until the next billing cycle — we'll notify you before that happens." },
 ];
 
 export function FAQ() {
   const [open, setOpen] = useState<number | null>(null);
-
   return (
-    <section id="faq" className="py-24 bg-white">
+    <section id="faq" className="py-24 bg-slate-50">
       <div className="max-w-3xl mx-auto px-6">
         <div className="text-center mb-12">
-          <h2 className="font-display text-4xl sm:text-5xl font-800 text-slate-900 mb-4">
-            Frequently asked questions
-          </h2>
-          <p className="text-slate-500 text-lg">
-            Still have questions?{' '}
-            <a href="mailto:hello@marketgrow.ai" className="text-brand-600 hover:underline">We're here to help.</a>
-          </p>
+          <h2 className="font-display text-4xl sm:text-5xl font-800 text-slate-900 mb-4">Frequently asked questions</h2>
+          <p className="text-slate-500 text-lg">Still have questions? <a href="mailto:hello@marketgrow.ai" className="text-brand-600 hover:underline">We're here to help.</a></p>
         </div>
-
         <div className="space-y-2">
           {faqs.map((faq, i) => (
-            <div key={i} className="border border-slate-100 rounded-xl overflow-hidden">
-              <button
-                className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-slate-50 transition-colors"
-                onClick={() => setOpen(open === i ? null : i)}
-              >
+            <div key={i} className="border border-slate-200 rounded-xl overflow-hidden bg-white">
+              <button className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-slate-50 transition-colors" onClick={() => setOpen(open === i ? null : i)}>
                 <span className="font-medium text-slate-900 text-sm pr-4">{faq.q}</span>
                 <ChevronDown className={`w-4 h-4 text-slate-400 flex-shrink-0 transition-transform ${open === i ? 'rotate-180' : ''}`} />
               </button>
-              {open === i && (
-                <div className="px-5 pb-4 text-sm text-slate-500 leading-relaxed border-t border-slate-100">
-                  {faq.a}
-                </div>
-              )}
+              {open === i && <div className="px-5 pb-4 text-sm text-slate-500 leading-relaxed border-t border-slate-100">{faq.a}</div>}
             </div>
           ))}
         </div>
@@ -304,21 +448,12 @@ export function CTA() {
   return (
     <section className="py-24 bg-brand-600">
       <div className="max-w-3xl mx-auto px-6 text-center">
-        <h2 className="font-display text-4xl sm:text-5xl font-800 text-white mb-4 text-balance">
-          Ready to grow smarter?
-        </h2>
-        <p className="text-brand-100 text-lg mb-10">
-          Join 2,400+ store owners already using MarketGrow to make better decisions every day.
-        </p>
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-          <Link
-            href="/register"
-            className="group flex items-center gap-2 bg-white text-brand-600 font-semibold px-7 py-3.5 rounded-xl hover:bg-brand-50 transition-all shadow-lg"
-          >
-            Start free — no card needed
-            <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-          </Link>
-        </div>
+        <h2 className="font-display text-4xl sm:text-5xl font-800 text-white mb-4 text-balance">Ready to grow smarter?</h2>
+        <p className="text-brand-100 text-lg mb-10">Join 2,400+ store owners already using MarketGrow to make better decisions every day.</p>
+        <Link href="/register" className="group inline-flex items-center gap-2 bg-white text-brand-600 font-semibold px-7 py-3.5 rounded-xl hover:bg-brand-50 transition-all shadow-lg">
+          Connect your store
+          <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+        </Link>
         <p className="text-brand-200 text-sm mt-6">14-day free trial · Cancel anytime</p>
       </div>
     </section>
@@ -333,30 +468,22 @@ export function Footer() {
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-10 mb-12">
           <div className="lg:col-span-1">
             <div className="flex items-center gap-2 text-white font-display font-700 text-lg mb-3">
-              <div className="w-7 h-7 rounded-lg bg-brand-600 flex items-center justify-center">
-                <Zap className="w-3.5 h-3.5 text-white" fill="white" />
-              </div>
+              <div className="w-7 h-7 rounded-lg bg-brand-600 flex items-center justify-center"><Zap className="w-3.5 h-3.5 text-white" fill="white" /></div>
               MarketGrow
             </div>
             <p className="text-sm leading-relaxed">AI-powered ecommerce intelligence for entrepreneurs who want to grow.</p>
           </div>
-
           {[
-            { title: 'Product',  links: ['Features', 'Pricing', 'Changelog', 'Roadmap'] },
-            { title: 'Company',  links: ['About', 'Blog', 'Careers', 'Press'] },
-            { title: 'Legal',    links: ['Privacy', 'Terms', 'Security', 'Cookies'] },
+            { title: 'Product', links: ['Features', 'Pricing', 'Changelog', 'Roadmap'] },
+            { title: 'Company', links: ['About', 'Blog', 'Careers', 'Press'] },
+            { title: 'Legal',   links: ['Privacy', 'Terms', 'Security', 'Cookies'] },
           ].map(col => (
             <div key={col.title}>
               <h4 className="text-white text-sm font-semibold mb-4">{col.title}</h4>
-              <ul className="space-y-2">
-                {col.links.map(l => (
-                  <li key={l}><a href="#" className="text-sm hover:text-white transition-colors">{l}</a></li>
-                ))}
-              </ul>
+              <ul className="space-y-2">{col.links.map(l => <li key={l}><a href="#" className="text-sm hover:text-white transition-colors">{l}</a></li>)}</ul>
             </div>
           ))}
         </div>
-
         <div className="border-t border-slate-800 pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs">
           <p>© {new Date().getFullYear()} MarketGrow. All rights reserved.</p>
           <p>Made for ecommerce entrepreneurs 🚀</p>
