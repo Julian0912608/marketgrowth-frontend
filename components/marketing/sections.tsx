@@ -375,34 +375,77 @@ export function Pricing() {
   );
 }
 
-// ── Testimonials ──────────────────────────────────────────────
+// ── Early Access / Social Proof ───────────────────────────────
 export function Testimonials() {
-  const testimonials = [
-    { name: 'Sarah van den Berg', role: 'Founder, Bloom & Co',       avatar: 'SB', color: 'bg-rose-100 text-rose-700',     content: 'MarketGrow changed how I run my store. I used to spend hours in spreadsheets. Now I check my dashboard for 5 minutes and know exactly what to focus on.' },
-    { name: 'Thomas Müller',      role: 'CEO, TechGadgets GmbH',     avatar: 'TM', color: 'bg-brand-100 text-brand-700',   content: 'The AI insights are genuinely useful. It flagged a drop in repeat purchases 2 weeks before I would have noticed it myself. That alone paid for a year\'s subscription.' },
-    { name: 'Priya Sharma',       role: 'Head of Ecommerce, StyleHub', avatar: 'PS', color: 'bg-violet-100 text-violet-700', content: 'We manage 4 stores across different markets. Having everything in one dashboard with unified AI reporting has been a game changer for our team.' },
+  const problems = [
+    { emoji: '😓', title: 'Too many tabs open', desc: 'Switching between Shopify, Meta Ads and Amazon daily just to get a basic overview of your numbers.' },
+    { emoji: '📊', title: 'Data without direction', desc: 'You see the numbers, but you don\'t know which product to scale, which ad to stop or where to focus next.' },
+    { emoji: '⏱️', title: 'Hours lost every week', desc: 'Building reports manually in spreadsheets instead of actually growing your business.' },
   ];
+
+  const waitlistAvatars = ['JK', 'MS', 'RB', 'LV', 'AT', 'PD', 'NW', 'CB'];
+
   return (
     <section id="testimonials" className="py-24 bg-white">
       <div className="max-w-7xl mx-auto px-6">
-        <div className="max-w-xl mx-auto text-center mb-16">
-          <h2 className="font-display text-4xl sm:text-5xl font-800 text-slate-900 mb-4">Trusted by 2,400+ stores</h2>
-          <p className="text-slate-500 text-lg">Don't take our word for it.</p>
+
+        {/* Header */}
+        <div className="max-w-2xl mx-auto text-center mb-16">
+          <div className="inline-flex items-center gap-2 bg-amber-50 text-amber-700 text-xs font-semibold px-3 py-1.5 rounded-full mb-4">
+            Built for real problems
+          </div>
+          <h2 className="font-display text-4xl sm:text-5xl font-800 text-slate-900 mb-4">
+            Sound familiar?
+          </h2>
+          <p className="text-slate-500 text-lg">
+            MarketGrow is built by ecommerce operators who lived these problems every day.
+          </p>
         </div>
-        <div className="grid md:grid-cols-3 gap-6">
-          {testimonials.map(t => (
-            <div key={t.name} className="bg-slate-50 rounded-2xl border border-slate-100 p-6 flex flex-col gap-4">
-              <p className="text-slate-600 leading-relaxed text-sm flex-1">"{t.content}"</p>
-              <div className="flex items-center gap-3">
-                <div className={`w-9 h-9 rounded-full ${t.color} flex items-center justify-center font-display font-700 text-xs`}>{t.avatar}</div>
-                <div>
-                  <div className="font-semibold text-slate-900 text-sm">{t.name}</div>
-                  <div className="text-xs text-slate-400">{t.role}</div>
-                </div>
-              </div>
+
+        {/* Problem cards */}
+        <div className="grid md:grid-cols-3 gap-6 mb-20">
+          {problems.map(p => (
+            <div key={p.title} className="bg-slate-50 rounded-2xl border border-slate-100 p-6">
+              <div className="text-3xl mb-4">{p.emoji}</div>
+              <h3 className="font-display font-700 text-slate-900 mb-2">{p.title}</h3>
+              <p className="text-slate-500 text-sm leading-relaxed">{p.desc}</p>
             </div>
           ))}
         </div>
+
+        {/* Waitlist social proof */}
+        <div className="bg-gradient-to-br from-brand-50 to-violet-50 border border-brand-100 rounded-2xl p-8 sm:p-12 text-center max-w-3xl mx-auto">
+          <div className="flex items-center justify-center mb-6">
+            <div className="flex -space-x-2">
+              {waitlistAvatars.map((initials, i) => (
+                <div
+                  key={i}
+                  className="w-9 h-9 rounded-full bg-brand-600 border-2 border-white flex items-center justify-center text-white text-xs font-bold"
+                  style={{ opacity: 1 - i * 0.08 }}
+                >
+                  {initials}
+                </div>
+              ))}
+            </div>
+          </div>
+          <h3 className="font-display text-2xl font-800 text-slate-900 mb-2">
+            Join the waitlist
+          </h3>
+          <p className="text-slate-500 text-base mb-2">
+            Ecommerce entrepreneurs from Shopify, Amazon and Bol.com stores are already signed up.
+          </p>
+          <p className="text-brand-600 font-semibold text-sm mb-6">
+            Early access members get 3 months free on launch.
+          </p>
+          <a
+            href="#"
+            onClick={e => { e.preventDefault(); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+            className="inline-flex items-center gap-2 bg-brand-600 hover:bg-brand-700 text-white font-semibold px-6 py-3 rounded-xl transition-all shadow-lg text-sm"
+          >
+            Claim your early access spot →
+          </a>
+        </div>
+
       </div>
     </section>
   );
