@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
     const timestamp = new Date().toLocaleString('nl-NL', { timeZone: 'Europe/Amsterdam' });
 
     const emailBody = {
-      from: 'onboarding@resend.dev',
+      from: 'noreply@marketgrow.ai',
       to: 'juligoventures@gmail.com',
       subject: 'Nieuwe waitlist aanmelding - MarketGrow.ai',
       html: '<div style="font-family:sans-serif;padding:24px"><h2>Nieuwe aanmelding</h2><p>E-mail: <strong>' + email + '</strong></p><p>' + timestamp + '</p></div>',
