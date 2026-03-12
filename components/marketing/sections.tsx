@@ -4,15 +4,36 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { ArrowRight, Check, ChevronDown, Zap, TrendingUp, BarChart3, Lightbulb, Sparkles, ExternalLink } from 'lucide-react';
 
-// ── Platform logos (inline SVG) ───────────────────────────────
+// ── Platform SVG logos ────────────────────────────────────────
 const platforms = [
-  { name: 'Shopify',      color: '#96bf47', letter: 'S' },
-  { name: 'WooCommerce',  color: '#7F54B3', letter: 'W' },
-  { name: 'Amazon',       color: '#FF9900', letter: 'A' },
-  { name: 'Etsy',         color: '#F56400', letter: 'E' },
-  { name: 'Meta Ads',     color: '#0082FB', letter: 'M' },
-  { name: 'Google Ads',   color: '#4285F4', letter: 'G' },
-  { name: 'TikTok Ads',   color: '#010101', letter: 'T' },
+  {
+    name: 'Shopify',
+    svg: `<svg viewBox="0 0 109 124" width="32" height="36" xmlns="http://www.w3.org/2000/svg"><path d="M94.5 13.8c-.1-.7-.7-1.1-1.2-1.1s-9.7-.7-9.7-.7-6.4-6.4-7.1-7.1c-.7-.7-2-.5-2.5-.3-.1 0-1.4.4-3.5 1.1C68.9 2.3 65.6 0 61.7 0c-9.8 0-14.5 12.3-16 18.5-3.8 1.2-6.5 2-6.8 2.1-2.1.7-2.2.7-2.4 2.7C36.3 24.7 26 106 26 106l68.7 12.9L109 113c0 .1-14.4-98.5-14.5-99.2z" fill="#95BF47"/><path d="M93.3 12.7c-.5 0-9.7-.7-9.7-.7s-6.4-6.4-7.1-7.1c-.3-.3-.6-.4-.9-.4L80 118.9l28.9-6.2-14.5-99.2c-.1-.5-.7-.8-1.1-.8z" fill="#5E8E3E"/><path d="M61.7 39.3l-3.4 10.1s-3-1.6-6.6-1.6c-5.3 0-5.6 3.3-5.6 4.2 0 4.6 12 6.4 12 17.2 0 8.5-5.4 14-12.7 14-8.7 0-13.2-5.4-13.2-5.4l2.3-7.7s4.6 3.9 8.4 3.9c2.5 0 3.6-2 3.6-3.4 0-6-9.8-6.2-9.8-16.2 0-8.3 6-16.4 18.1-16.4 4.7-.1 7 1.3 6.9 1.3z" fill="#fff"/></svg>`,
+  },
+  {
+    name: 'WooCommerce',
+    svg: `<svg viewBox="0 0 200 72" width="80" height="29" xmlns="http://www.w3.org/2000/svg"><rect width="200" height="72" rx="10" fill="#7F54B3"/><text x="14" y="48" font-family="Arial Black,Arial" font-weight="900" font-size="38" fill="white">Woo</text></svg>`,
+  },
+  {
+    name: 'Amazon',
+    svg: `<svg viewBox="0 0 145 44" width="90" height="28" xmlns="http://www.w3.org/2000/svg"><text x="0" y="34" font-family="Arial Black,Arial" font-weight="900" font-size="36" fill="#232F3E">amazon</text><path d="M12 40 Q72 52 132 40" stroke="#FF9900" stroke-width="5" fill="none" stroke-linecap="round"/><path d="M122 33 Q135 39 132 40 Q128 34 124 37z" fill="#FF9900"/></svg>`,
+  },
+  {
+    name: 'Etsy',
+    svg: `<svg viewBox="0 0 56 56" width="32" height="32" xmlns="http://www.w3.org/2000/svg"><circle cx="28" cy="28" r="28" fill="#F56400"/><path d="M17 13h22v7H24v8h13v7H24v9h15v7H17z" fill="white"/></svg>`,
+  },
+  {
+    name: 'Meta Ads',
+    svg: `<svg viewBox="0 0 56 56" width="32" height="32" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="mg2" x1="0%" y1="100%" x2="100%" y2="0%"><stop offset="0%" stop-color="#0064E0"/><stop offset="100%" stop-color="#00C2FF"/></linearGradient></defs><circle cx="28" cy="28" r="28" fill="url(#mg2)"/><path d="M12 34c0-5 2-10 5-14 2-3 5-5 8-5 2.5 0 5 1.5 7.5 5.5l6 9.5c1.5 2.5 3 3.5 4.5 3.5 3.5 0 5.5-4 5.5-10 0-4-1.5-8-4.5-10.5" stroke="white" stroke-width="4.5" stroke-linecap="round" fill="none"/><path d="M44 34c0-5-2-10-5-14-2-3-5-5-8-5-2.5 0-5 1.5-7.5 5.5" stroke="white" stroke-width="4.5" stroke-linecap="round" fill="none"/></svg>`,
+  },
+  {
+    name: 'Google Ads',
+    svg: `<svg viewBox="0 0 56 56" width="32" height="32" xmlns="http://www.w3.org/2000/svg"><rect x="4" y="28" width="14" height="22" rx="7" fill="#EA4335"/><rect x="21" y="6" width="14" height="44" rx="7" fill="#34A853"/><rect x="38" y="18" width="14" height="32" rx="7" fill="#FBBC04"/></svg>`,
+  },
+  {
+    name: 'TikTok Ads',
+    svg: `<svg viewBox="0 0 56 56" width="32" height="32" xmlns="http://www.w3.org/2000/svg"><circle cx="28" cy="28" r="28" fill="#010101"/><path d="M36 14h-6v19a5 5 0 1 1-5-5v-6a11 11 0 1 0 11 11V22a14 14 0 0 0 8 2.5V18a8 8 0 0 1-8-4z" fill="white"/></svg>`,
+  },
 ];
 
 // ── Platform connections ──────────────────────────────────────
@@ -27,11 +48,9 @@ export function PlatformBar() {
           {platforms.map(p => (
             <div key={p.name} className="flex flex-col items-center gap-2 group cursor-default">
               <div
-                className="w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-sm opacity-60 group-hover:opacity-100 transition-opacity"
-                style={{ backgroundColor: p.color }}
-              >
-                {p.letter}
-              </div>
+                className="flex items-center justify-center opacity-60 group-hover:opacity-100 transition-opacity duration-200"
+                dangerouslySetInnerHTML={{ __html: p.svg }}
+              />
               <span className="text-xs text-slate-400 group-hover:text-slate-600 font-medium transition-colors">{p.name}</span>
             </div>
           ))}
@@ -435,7 +454,7 @@ export function Testimonials() {
             Ecommerce entrepreneurs from Shopify, Amazon and Bol.com stores are already signed up.
           </p>
           <p className="text-brand-600 font-semibold text-sm mb-6">
-            Early access members get 3 months free on launch.
+            Early access members get their first month free on launch.
           </p>
           <a
             href="#"
@@ -488,16 +507,60 @@ export function FAQ() {
 
 // ── CTA ───────────────────────────────────────────────────────
 export function CTA() {
+  const [email, setEmail]   = useState('');
+  const [status, setStatus] = useState<'idle' | 'loading' | 'success'>('idle');
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!email) return;
+    setStatus('loading');
+    try {
+      const res = await fetch('/api/waitlist', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      if (!res.ok) throw new Error();
+    } catch {}
+    setStatus('success');
+    setEmail('');
+  }
+
   return (
-    <section className="py-24 bg-brand-600">
-      <div className="max-w-3xl mx-auto px-6 text-center">
-        <h2 className="font-display text-4xl sm:text-5xl font-800 text-white mb-4 text-balance">Ready to grow smarter?</h2>
-        <p className="text-brand-100 text-lg mb-10">Join 2,400+ store owners already using MarketGrow to make better decisions every day.</p>
-        <Link href="/register" className="group inline-flex items-center gap-2 bg-white text-brand-600 font-semibold px-7 py-3.5 rounded-xl hover:bg-brand-50 transition-all shadow-lg">
-          Connect your store
-          <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-        </Link>
-        <p className="text-brand-200 text-sm mt-6">14-day free trial · Cancel anytime</p>
+    <section id="waitlist" className="py-24 bg-brand-600">
+      <div className="max-w-xl mx-auto px-6 text-center">
+        <h2 className="font-display text-4xl sm:text-5xl font-800 text-white mb-4 text-balance">
+          Ready to grow smarter?
+        </h2>
+        <p className="text-brand-100 text-lg mb-10">
+          Be among the first to access MarketGrow. Early access members get their first month free.
+        </p>
+
+        {status === 'success' ? (
+          <div className="flex items-center justify-center gap-3 bg-white/20 border border-white/30 text-white font-medium px-6 py-4 rounded-xl mb-4">
+            ✓ You're on the list! We'll be in touch soon.
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-3 mb-4">
+            <input
+              type="email"
+              required
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              placeholder="Enter your work email"
+              className="flex-1 px-4 py-3.5 rounded-xl border border-white/20 bg-white/10 text-white placeholder:text-brand-200 text-sm focus:outline-none focus:ring-2 focus:ring-white/50"
+            />
+            <button
+              type="submit"
+              disabled={status === 'loading'}
+              className="group flex items-center justify-center gap-2 bg-white text-brand-600 hover:bg-brand-50 disabled:opacity-60 font-semibold px-6 py-3.5 rounded-xl transition-all shadow-lg whitespace-nowrap text-sm"
+            >
+              {status === 'loading' ? 'Joining...' : 'Join the waitlist'}
+              {status !== 'loading' && <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />}
+            </button>
+          </form>
+        )}
+        <p className="text-brand-200 text-sm">No credit card · No spam · First month free on launch</p>
       </div>
     </section>
   );
