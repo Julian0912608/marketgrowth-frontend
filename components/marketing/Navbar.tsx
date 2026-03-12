@@ -47,14 +47,11 @@ export function Navbar() {
           ))}
         </ul>
 
-        {/* CTA buttons */}
+        {/* CTA button - waitlist only */}
         <div className="hidden md:flex items-center gap-3">
-          <Link href="/login" className="text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors px-4 py-2">
-            Sign in
-          </Link>
-          <Link href="/register" className="text-sm font-semibold bg-brand-600 hover:bg-brand-700 text-white px-4 py-2 rounded-lg transition-colors">
-            Start free →
-          </Link>
+          <a href="#waitlist" className="text-sm font-semibold bg-brand-600 hover:bg-brand-700 text-white px-4 py-2 rounded-lg transition-colors">
+            Join waitlist →
+          </a>
         </div>
 
         {/* Mobile menu toggle */}
@@ -80,9 +77,8 @@ export function Navbar() {
               {l.label}
             </a>
           ))}
-          <div className="pt-3 border-t border-slate-100 flex flex-col gap-2">
-            <Link href="/login"    className="text-sm font-medium text-center py-2.5 border border-slate-200 rounded-lg">Sign in</Link>
-            <Link href="/register" className="text-sm font-semibold text-center py-2.5 bg-brand-600 text-white rounded-lg">Start free →</Link>
+          <div className="pt-3 border-t border-slate-100">
+            <a href="#waitlist" className="block text-sm font-semibold text-center py-2.5 bg-brand-600 text-white rounded-lg">Join waitlist →</a>
           </div>
         </div>
       )}
