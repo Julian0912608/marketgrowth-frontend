@@ -1,12 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-/**
- * POST /api/waitlist
- *
- * Stores an early-access signup.
- * In production: connect to Loops, Mailchimp, Resend, or your DB.
- * For now: logs the email and returns 200 so the frontend form works immediately.
- */
 export async function POST(req: NextRequest) {
   try {
     const { email } = await req.json();
@@ -15,34 +8,55 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid email' }, { status: 400 });
     }
 
-    // ─── Option A: Loops.so ────────────────────────────────────────────────
-    // const LOOPS_API_KEY = process.env.LOOPS_API_KEY;
-    // if (LOOPS_API_KEY) {
-    //   await fetch('https://app.loops.so/api/v1/contacts/create', {
-    //     method: 'POST',
-    //     headers: { Authorization: `Bearer ${LOOPS_API_KEY}`, 'Content-Type': 'application/json' },
-    //     body: JSON.stringify({ email, source: 'waitlist', userGroup: 'waitlist' }),
-    //   });
-    // }
+    const apiKey = process.env.RESEND_API_KEY;
 
-    // ─── Option B: Mailchimp ───────────────────────────────────────────────
-    // const MC_KEY = process.env.MAILCHIMP_API_KEY;
-    // const MC_LIST = process.env.MAILCHIMP_LIST_ID;
-    // const MC_DC   = MC_KEY?.split('-')[1];
-    // if (MC_KEY && MC_LIST) {
-    //   await fetch(`https://${MC_DC}.api.mailchimp.com/3.0/lists/${MC_LIST}/members`, {
-    //     method: 'POST',
-    //     headers: { Authorization: `Basic ${Buffer.from(`any:${MC_KEY}`).toString('base64')}`, 'Content-Type': 'application/json' },
-    //     body: JSON.stringify({ email_address: email, status: 'subscribed', tags: ['waitlist'] }),
-    //   });
-    // }
+    if (!apiKey) {
+      console.error('[waitlist] RESEND_API_KEY is not set');
+      return NextResponse.json({ error: 'Server misconfiguration' }, { status: 500 });
+    }
 
-    // ─── Fallback: just log (replace in production) ────────────────────────
-    console.log(`[waitlist] new signup: ${email}`);
+    const res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        from: 'juligoventures@gmail.com',
+        to: 'juligoventures@gmail.com',
+        subject: '🎉 Nieuwe waitlist aanmelding — MarketGrow.ai',
+        html: `
+          <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; padding: 32px; background: #f9fafb; border-radius: 12px;">
+            <div style="background: #4F46E5; border-radius: 8px; padding: 16px 24px; margin-bottom: 24px;">
+              <h1 style="color: white; margin: 0; font-size: 18px;">MarketGrow.ai</h1>
+            </div>
+            <h2 style="color: #111827; font-size: 20px; margin-bottom: 8px;">Nieuwe aanmelding 🚀</h2>
+            <p style="color: #6B7280; font-size: 15px; margin-bottom: 24px;">
+              Iemand heeft zich aangemeld voor de early access waitlist.
+            </p>
+            <div style="background: white; border: 1px solid #E5E7EB; border-radius: 8px; padding: 16px 20px; margin-bottom: 24px;">
+              <p style="margin: 0; color: #374151; font-size: 14px;">E-mailadres</p>
+              <p style="margin: 4px 0 0; color: #111827; font-size: 16px; font-weight: 600;">${email}</p>
+            </div>
+            <p style="color: #9CA3AF; font-size: 12px; margin: 0;">
+              Verzonden via MarketGrow.ai waitlist · ${new Date().toLocaleString('nl-NL', { timeZone: 'Europe/Amsterdam' })}
+            </p>
+          </div>
+        `,
+      }),
+    });
 
+    if (!res.ok) {
+      const error = await res.text();
+      console.error('[waitlist] Resend error:', error);
+      return NextResponse.json({ error: 'Failed to send email' }, { status: 500 });
+    }
+
+    console.log(`[waitlist] signup + email sent for: ${email}`);
     return NextResponse.json({ success: true });
+
   } catch (err) {
-    console.error('[waitlist] error:', err);
+    console.error('[waitlist] unexpected error:', err);
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
   }
 }
