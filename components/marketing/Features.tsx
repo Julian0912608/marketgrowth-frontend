@@ -1,40 +1,46 @@
-import { BarChart3, Zap, ShieldCheck, Globe, Bell, TrendingUp } from 'lucide-react';
+'use client';
+
+import { BarChart3, Zap, ShieldCheck, Globe, Bell, TrendingUp, Layers, Target } from 'lucide-react';
 
 const features = [
   {
-    icon: BarChart3,
-    title: 'Real-time Sales Dashboard',
-    description: 'See every order, revenue metric, and trend the moment it happens. Your store data, live and crystal clear.',
+    icon: Layers,
+    title: 'Cross-platform product intelligence',
+    description: 'See exactly which products perform on Shopify vs Amazon vs Bol.com — side by side. Identify your winners, cut your losers, and scale with confidence across every channel.',
     color: 'bg-brand-50 text-brand-600',
+    badge: 'Core feature',
+  },
+  {
+    icon: BarChart3,
+    title: 'Ecommerce data intelligence',
+    description: 'Every metric that matters — revenue, conversion, AOV, return rate, LTV — pulled from all your platforms and unified in one clean intelligence layer. No more spreadsheet chaos.',
+    color: 'bg-violet-50 text-violet-600',
+    badge: 'Core feature',
   },
   {
     icon: Zap,
-    title: 'AI-Powered Insights',
-    description: 'Our AI analyzes your data 24/7 and surfaces the insights that actually matter — no data science degree needed.',
-    color: 'bg-violet-50 text-violet-600',
+    title: 'AI growth suggestions',
+    description: 'Our AI analyses your data 24/7 and tells you exactly what to do next: which product to scale, which ad to stop, where to launch. Decisions in seconds, not days.',
+    color: 'bg-amber-50 text-amber-600',
+    badge: 'AI-powered',
+  },
+  {
+    icon: Target,
+    title: 'Marketing insights that pay off',
+    description: 'Understand your true ROAS per campaign, detect ad fatigue before it hurts your budget, and find the winning audiences hiding in your data.',
+    color: 'bg-rose-50 text-rose-600',
+    badge: 'AI-powered',
   },
   {
     icon: Globe,
-    title: 'Multi-Store Management',
-    description: 'Run multiple Shopify or WooCommerce stores? Manage them all from one dashboard with unified reporting.',
+    title: 'Multi-store & multi-market',
+    description: 'Selling across multiple countries or brands? Manage every store, every currency, every market from a single dashboard built for scale.',
     color: 'bg-emerald-50 text-emerald-600',
   },
   {
-    icon: Bell,
-    title: 'Smart Alerts',
-    description: 'Get notified when revenue drops, products go out of stock, or an unusual spike needs your attention.',
-    color: 'bg-amber-50 text-amber-600',
-  },
-  {
-    icon: TrendingUp,
-    title: 'Growth Recommendations',
-    description: 'AI-generated, actionable steps to increase your conversion rate, average order value, and repeat purchases.',
-    color: 'bg-rose-50 text-rose-600',
-  },
-  {
     icon: ShieldCheck,
-    title: 'Enterprise-grade Security',
-    description: 'Your data is encrypted at rest and in transit. Strict tenant isolation means no data ever crosses accounts.',
+    title: 'Enterprise-grade security',
+    description: 'Data encrypted at rest and in transit. Strict tenant isolation. Built from day one to handle 500+ users without compromising on privacy or performance.',
     color: 'bg-sky-50 text-sky-600',
   },
 ];
@@ -44,34 +50,46 @@ export function Features() {
     <section id="features" className="py-24 bg-white">
       <div className="max-w-7xl mx-auto px-6">
 
-        {/* Header */}
         <div className="max-w-2xl mx-auto text-center mb-16">
           <div className="inline-flex items-center gap-2 bg-slate-100 text-slate-600 text-xs font-semibold px-3 py-1.5 rounded-full mb-4">
-            Everything you need
+            What MarketGrow.ai does
           </div>
           <h2 className="font-display text-4xl sm:text-5xl font-800 text-slate-900 mb-4 text-balance">
-            Built for ecommerce entrepreneurs
+            Stop guessing. Start growing.
           </h2>
           <p className="text-slate-500 text-lg leading-relaxed">
-            Every feature is designed around one goal: helping you make better decisions, faster.
+            Every feature is built around one goal: give ecommerce entrepreneurs the intelligence
+            they need to make the right call — fast.
           </p>
         </div>
 
-        {/* Grid */}
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {features.map((f) => (
-            <div
-              key={f.title}
-              className="group p-6 rounded-2xl border border-slate-100 bg-white hover:border-slate-200 hover:shadow-lg hover:shadow-slate-100 transition-all duration-300"
-            >
-              <div className={`w-10 h-10 rounded-xl ${f.color} flex items-center justify-center mb-4`}>
-                <f.icon className="w-5 h-5" />
+          {features.map(f => {
+            const Icon = f.icon;
+            return (
+              <div
+                key={f.title}
+                className="group relative bg-white rounded-2xl border border-slate-200 p-6 hover:shadow-lg hover:-translate-y-1 transition-all duration-300"
+              >
+                {f.badge && (
+                  <span className="absolute top-4 right-4 text-xs font-semibold px-2.5 py-1 rounded-full bg-brand-50 text-brand-700 border border-brand-100">
+                    {f.badge}
+                  </span>
+                )}
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-4 ${f.color}`}>
+                  <Icon className="w-5 h-5" />
+                </div>
+                <h3 className="font-display font-700 text-slate-900 mb-2 leading-snug pr-16">
+                  {f.title}
+                </h3>
+                <p className="text-slate-500 text-sm leading-relaxed">
+                  {f.description}
+                </p>
               </div>
-              <h3 className="font-display font-700 text-slate-900 mb-2">{f.title}</h3>
-              <p className="text-sm text-slate-500 leading-relaxed">{f.description}</p>
-            </div>
-          ))}
+            );
+          })}
         </div>
+
       </div>
     </section>
   );
