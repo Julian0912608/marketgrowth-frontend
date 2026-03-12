@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: 'noreply@marketgrow.ai',
+        from: 'onboarding@resend.dev',
         to: 'juligoventures@gmail.com',
         subject: '🎉 Nieuwe waitlist aanmelding — MarketGrow.ai',
         html: `
