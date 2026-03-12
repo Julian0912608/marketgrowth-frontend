@@ -1,31 +1,29 @@
 'use client';
+
 import { useState } from 'react';
 import Link from 'next/link';
-import { Check, ChevronDown, ArrowRight, Zap } from 'lucide-react';
+import { ArrowRight, Check, ChevronDown, Zap } from 'lucide-react';
 
-// ── Demo ─────────────────────────────────────────────────────
+// ── Demo ──────────────────────────────────────────────────────
 export function Demo() {
   return (
-    <section id="demo" className="py-24 bg-surface-50">
+    <section id="demo" className="py-24 bg-slate-50">
       <div className="max-w-7xl mx-auto px-6">
-        <div className="max-w-2xl mx-auto text-center mb-12">
-          <div className="inline-flex items-center gap-2 bg-white border border-slate-200 text-slate-600 text-xs font-semibold px-3 py-1.5 rounded-full mb-4">
-            See it in action
+        <div className="max-w-xl mb-12">
+          <div className="inline-flex items-center gap-2 bg-slate-100 text-slate-600 text-xs font-semibold px-3 py-1.5 rounded-full mb-4">
+            How it works
           </div>
-          <h2 className="font-display text-4xl sm:text-5xl font-800 text-slate-900 mb-4 text-balance">
-            From connection to insight in minutes
+          <h2 className="font-display text-4xl sm:text-5xl font-800 text-slate-900 mb-4">
+            Up and running in minutes
           </h2>
-          <p className="text-slate-500 text-lg">
-            Connect your store once. MarketGrowth does the rest — automatically.
-          </p>
+          <p className="text-slate-500 text-lg">No complex setup. No developer needed.</p>
         </div>
 
         <div className="grid lg:grid-cols-2 gap-12 items-center">
-          {/* Steps */}
-          <div className="space-y-6">
+          <div className="space-y-8">
             {[
-              { step: '01', title: 'Connect your store', desc: 'Link Shopify, WooCommerce, or any other platform in under 60 seconds. No developer needed.' },
-              { step: '02', title: 'AI analyses your data', desc: 'MarketGrowth imports your full order history and starts identifying patterns, peaks, and opportunities.' },
+              { step: '01', title: 'Connect your store', desc: 'Link Shopify, WooCommerce, Bol.com or any platform in one click. No developer needed.' },
+              { step: '02', title: 'AI analyses your data', desc: 'MarketGrow imports your full order history and starts identifying patterns, peaks, and opportunities.' },
               { step: '03', title: 'Get actionable insights', desc: 'Your personalized dashboard and AI recommendations are ready. Start making smarter decisions today.' },
             ].map(s => (
               <div key={s.step} className="flex gap-4">
@@ -40,7 +38,6 @@ export function Demo() {
             ))}
           </div>
 
-          {/* Video placeholder */}
           <div className="relative bg-slate-900 rounded-2xl overflow-hidden aspect-video flex items-center justify-center">
             <div className="absolute inset-0 bg-gradient-to-br from-brand-900/80 to-slate-900" />
             <div className="relative text-center">
@@ -113,7 +110,6 @@ export function Pricing() {
   return (
     <section id="pricing" className="py-24 bg-white">
       <div className="max-w-7xl mx-auto px-6">
-
         <div className="max-w-2xl mx-auto text-center mb-12">
           <div className="inline-flex items-center gap-2 bg-slate-100 text-slate-600 text-xs font-semibold px-3 py-1.5 rounded-full mb-4">
             Simple pricing
@@ -121,11 +117,8 @@ export function Pricing() {
           <h2 className="font-display text-4xl sm:text-5xl font-800 text-slate-900 mb-4">
             Grow without surprises
           </h2>
-          <p className="text-slate-500 text-lg mb-8">
-            Start free for 14 days. No credit card required.
-          </p>
+          <p className="text-slate-500 text-lg mb-8">Start free for 14 days. No credit card required.</p>
 
-          {/* Annual toggle */}
           <div className="inline-flex items-center gap-3 bg-slate-100 rounded-xl p-1">
             <button
               onClick={() => setAnnual(false)}
@@ -150,7 +143,7 @@ export function Pricing() {
                 key={plan.slug}
                 className={`relative rounded-2xl p-6 flex flex-col ${
                   plan.popular
-                    ? 'bg-brand-600 text-white shadow-2xl shadow-brand-600/30 scale-105'
+                    ? 'bg-brand-600 text-white shadow-xl shadow-brand-600/30'
                     : 'bg-white border border-slate-200'
                 }`}
               >
@@ -159,27 +152,23 @@ export function Pricing() {
                     Most popular
                   </div>
                 )}
-
                 <div className="mb-6">
                   <h3 className={`font-display font-700 text-lg mb-1 ${plan.popular ? 'text-white' : 'text-slate-900'}`}>
                     {plan.name}
                   </h3>
-                  <p className={`text-sm mb-4 ${plan.popular ? 'text-brand-100' : 'text-slate-500'}`}>
-                    {plan.desc}
-                  </p>
-                  <div className="flex items-end gap-1">
+                  <p className={`text-sm mb-4 ${plan.popular ? 'text-brand-100' : 'text-slate-500'}`}>{plan.desc}</p>
+                  <div className="flex items-baseline gap-1">
                     <span className={`font-display text-4xl font-800 ${plan.popular ? 'text-white' : 'text-slate-900'}`}>
                       €{price}
                     </span>
-                    <span className={`text-sm pb-1 ${plan.popular ? 'text-brand-100' : 'text-slate-400'}`}>/mo</span>
+                    <span className={`text-sm ${plan.popular ? 'text-brand-200' : 'text-slate-400'}`}>/mo</span>
                   </div>
-                  {annual && <p className={`text-xs mt-1 ${plan.popular ? 'text-brand-100' : 'text-slate-400'}`}>billed annually</p>}
                 </div>
 
-                <ul className="space-y-3 mb-8 flex-1">
+                <ul className="space-y-3 flex-1 mb-6">
                   {plan.features.map(f => (
-                    <li key={f} className="flex items-start gap-2 text-sm">
-                      <Check className={`w-4 h-4 mt-0.5 flex-shrink-0 ${plan.popular ? 'text-brand-200' : 'text-emerald-500'}`} />
+                    <li key={f} className="flex items-center gap-2.5 text-sm">
+                      <Check className={`w-4 h-4 flex-shrink-0 ${plan.popular ? 'text-brand-200' : 'text-emerald-500'}`} />
                       <span className={plan.popular ? 'text-brand-50' : 'text-slate-600'}>{f}</span>
                     </li>
                   ))}
@@ -209,7 +198,7 @@ const testimonials = [
   {
     name:    'Sarah van den Berg',
     role:    'Founder, Bloom & Co',
-    content: 'MarketGrowth changed how I run my store. I used to spend hours in spreadsheets. Now I check my dashboard for 5 minutes and know exactly what to focus on.',
+    content: 'MarketGrow changed how I run my store. I used to spend hours in spreadsheets. Now I check my dashboard for 5 minutes and know exactly what to focus on.',
     avatar:  'SB',
     color:   'bg-rose-100 text-rose-700',
   },
@@ -263,12 +252,12 @@ export function Testimonials() {
 
 // ── FAQ ───────────────────────────────────────────────────────
 const faqs = [
-  { q: 'Which platforms does MarketGrowth support?',         a: 'We support Shopify, WooCommerce, Lightspeed, Magento, and more. New integrations are added regularly.' },
-  { q: 'Is my data secure?',                                 a: 'Yes. All data is encrypted in transit and at rest. Each account is fully isolated — no data is ever shared between customers.' },
-  { q: 'Can I cancel my subscription at any time?',          a: 'Absolutely. Cancel anytime from your account settings. If you cancel, you keep access until the end of your billing period.' },
-  { q: 'What are AI credits?',                               a: 'AI credits power features like insight generation, recommendations, and automated reports. Unused credits do not roll over.' },
-  { q: 'Do you offer a free trial?',                         a: 'Yes — all plans include a 14-day free trial. No credit card required to start.' },
-  { q: 'What happens if I exceed my AI credit limit?',       a: "Your dashboard continues to work normally. AI-powered features pause until the next billing cycle — we'll notify you before that happens." },
+  { q: 'Which platforms does MarketGrow support?',      a: 'We support Shopify, WooCommerce, Amazon, Bol.com, Meta Ads, Google Ads, Etsy and more. New integrations are added regularly.' },
+  { q: 'Is my data secure?',                            a: 'Yes. All data is encrypted in transit and at rest. Each account is fully isolated — no data is ever shared between customers.' },
+  { q: 'Can I cancel my subscription at any time?',     a: 'Absolutely. Cancel anytime from your account settings. If you cancel, you keep access until the end of your billing period.' },
+  { q: 'What are AI credits?',                          a: 'AI credits power features like insight generation, recommendations, and automated reports. Unused credits do not roll over.' },
+  { q: 'Do you offer a free trial?',                    a: 'Yes — all plans include a 14-day free trial. No credit card required to start.' },
+  { q: 'What happens if I exceed my AI credit limit?',  a: "Your dashboard continues to work normally. AI-powered features pause until the next billing cycle — we'll notify you before that happens." },
 ];
 
 export function FAQ() {
@@ -281,15 +270,15 @@ export function FAQ() {
           <h2 className="font-display text-4xl sm:text-5xl font-800 text-slate-900 mb-4">
             Frequently asked questions
           </h2>
-          <p className="text-slate-500 text-lg">Still have questions? <a href="mailto:hello@marketgrowth.io" className="text-brand-600 hover:underline">We're here to help.</a></p>
+          <p className="text-slate-500 text-lg">
+            Still have questions?{' '}
+            <a href="mailto:hello@marketgrow.ai" className="text-brand-600 hover:underline">We're here to help.</a>
+          </p>
         </div>
 
         <div className="space-y-2">
           {faqs.map((faq, i) => (
-            <div
-              key={i}
-              className="border border-slate-100 rounded-xl overflow-hidden"
-            >
+            <div key={i} className="border border-slate-100 rounded-xl overflow-hidden">
               <button
                 className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-slate-50 transition-colors"
                 onClick={() => setOpen(open === i ? null : i)}
@@ -319,7 +308,7 @@ export function CTA() {
           Ready to grow smarter?
         </h2>
         <p className="text-brand-100 text-lg mb-10">
-          Join 2,400+ store owners already using MarketGrowth to make better decisions every day.
+          Join 2,400+ store owners already using MarketGrow to make better decisions every day.
         </p>
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
           <Link
@@ -347,7 +336,7 @@ export function Footer() {
               <div className="w-7 h-7 rounded-lg bg-brand-600 flex items-center justify-center">
                 <Zap className="w-3.5 h-3.5 text-white" fill="white" />
               </div>
-              MarketGrowth
+              MarketGrow
             </div>
             <p className="text-sm leading-relaxed">AI-powered ecommerce intelligence for entrepreneurs who want to grow.</p>
           </div>
@@ -369,7 +358,7 @@ export function Footer() {
         </div>
 
         <div className="border-t border-slate-800 pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs">
-          <p>© {new Date().getFullYear()} MarketGrowth. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} MarketGrow. All rights reserved.</p>
           <p>Made for ecommerce entrepreneurs 🚀</p>
         </div>
       </div>
