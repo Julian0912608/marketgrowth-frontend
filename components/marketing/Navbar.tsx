@@ -5,11 +5,11 @@ import Link from 'next/link';
 import { Menu, X, Zap } from 'lucide-react';
 
 const navLinks = [
-  { label: 'Features',    href: '#features' },
-  { label: 'Demo',        href: '#demo' },
-  { label: 'Pricing',     href: '#pricing' },
-  { label: 'Testimonials',href: '#testimonials' },
-  { label: 'FAQ',         href: '#faq' },
+  { label: 'Features',     href: '#features' },
+  { label: 'Demo',         href: '#demo' },
+  { label: 'Pricing',      href: '#pricing' },
+  { label: 'Testimonials', href: '#testimonials' },
+  { label: 'FAQ',          href: '#faq' },
 ];
 
 export function Navbar() {
@@ -33,7 +33,7 @@ export function Navbar() {
           <div className="w-8 h-8 rounded-lg bg-brand-600 flex items-center justify-center">
             <Zap className="w-4 h-4 text-white" fill="white" />
           </div>
-          MarketGrowth
+          MarketGrow
         </Link>
 
         {/* Desktop links */}
