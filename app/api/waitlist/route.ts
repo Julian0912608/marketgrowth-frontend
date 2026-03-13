@@ -4,8 +4,11 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const email = body?.email;
+    const name = body?.name || '';
+    const source = body?.source || 'waitlist';
+    const isWhitepaper = source === 'whitepaper';
 
-    console.log('[waitlist] received request, email:', email);
+    console.log('[waitlist] received request, email:', email, 'source:', source);
 
     if (!email || typeof email !== 'string' || !email.includes('@')) {
       console.log('[waitlist] invalid email');
@@ -21,14 +24,28 @@ export async function POST(req: NextRequest) {
 
     const timestamp = new Date().toLocaleString('nl-NL', { timeZone: 'Europe/Amsterdam' });
 
+    const subject = isWhitepaper
+      ? `Whitepaper download: ${name || email} — MarketGrow.ai`
+      : 'Nieuwe waitlist aanmelding — MarketGrow.ai';
+
+    const html = `
+      <div style="font-family:sans-serif;padding:24px;max-width:480px">
+        <h2 style="color:#1e293b">${isWhitepaper ? '📄 Whitepaper download' : '🎉 Nieuwe waitlist aanmelding'}</h2>
+        <p><strong>Email:</strong> ${email}</p>
+        ${name ? `<p><strong>Naam:</strong> ${name}</p>` : ''}
+        <p><strong>Bron:</strong> ${isWhitepaper ? 'Whitepaper download' : 'Waitlist signup'}</p>
+        <p style="color:#6b7280;font-size:14px">${timestamp}</p>
+      </div>
+    `;
+
     const emailBody = {
       from: 'onboarding@resend.dev',
       to: 'juligoventures@gmail.com',
-      subject: isWhitepaper ? `Whitepaper download: ${name || email} — MarketGrow.ai` : 'Nieuwe waitlist aanmelding — MarketGrow.ai',
-      html: '<div style="font-family:sans-serif;padding:24px"><h2>Nieuwe aanmelding</h2><p>E-mail: <strong>' + email + '</strong></p><p>' + timestamp + '</p></div>',
+      subject,
+      html,
     };
 
-    console.log('[waitlist] sending to Resend, from:', emailBody.from, 'to:', emailBody.to);
+    console.log('[waitlist] sending to Resend, subject:', subject);
 
     const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',
