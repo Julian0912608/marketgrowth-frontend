@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
@@ -51,6 +53,7 @@ export async function POST(req: NextRequest) {
     }
 
     // ── 1. Notification email to owner ────────────────────────────────────
+    await delay(600);
     await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
@@ -79,6 +82,7 @@ export async function POST(req: NextRequest) {
 
     // ── 2. Delivery email to user (whitepaper) ────────────────────────────
     if (isWhitepaper) {
+      await delay(600);
       const deliveryRes = await fetch('https://api.resend.com/emails', {
         method: 'POST',
         headers: {
@@ -145,6 +149,7 @@ export async function POST(req: NextRequest) {
 
     // ── 3. Confirmation email to user (waitlist signup) ───────────────────
     if (!isWhitepaper) {
+      await delay(600);
       const confirmRes = await fetch('https://api.resend.com/emails', {
         method: 'POST',
         headers: {
