@@ -33,8 +33,8 @@ export async function POST(req: NextRequest) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: 'onboarding@resend.dev',
-        to: 'juligoventures@gmail.com',
+        from: 'hello@marketgrow.ai',
+        to: 'hello@marketgrow.ai',
         subject: isWhitepaper
           ? `Whitepaper download: ${name || email} - MarketGrow`
           : `Nieuwe waitlist aanmelding: ${email} - MarketGrow`,
@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          from: 'onboarding@resend.dev',
+          from: 'hello@marketgrow.ai',
           to: email,
           subject: 'Your MarketGrow report: The Multi-Channel Ecommerce Intelligence Gap',
           html: `
@@ -127,7 +127,7 @@ export async function POST(req: NextRequest) {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          from: 'onboarding@resend.dev',
+          from: 'hello@marketgrow.ai',
           to: email,
           subject: "You are on the MarketGrow waitlist",
           html: `
