@@ -24,6 +24,31 @@ export async function POST(req: NextRequest) {
 
     const timestamp = new Date().toLocaleString('nl-NL', { timeZone: 'Europe/Amsterdam' });
     const firstName = name ? name.split(' ')[0] : 'there';
+    const audienceId = process.env.RESEND_AUDIENCE_ID;
+
+    // ── Add contact to Resend Audience ────────────────────────────────────
+    if (audienceId) {
+      const nameParts = name.trim().split(' ');
+      const firstName_ = nameParts[0] || '';
+      const lastName_  = nameParts.slice(1).join(' ') || '';
+      const audienceRes = await fetch(`https://api.resend.com/audiences/${audienceId}/contacts`, {
+        method: 'POST',
+        headers: {
+          Authorization: 'Bearer ' + apiKey,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email,
+          first_name: firstName_,
+          last_name: lastName_,
+          unsubscribed: false,
+        }),
+      });
+      const audienceText = await audienceRes.text();
+      console.log('[waitlist] audience add status:', audienceRes.status, audienceText);
+    } else {
+      console.log('[waitlist] RESEND_AUDIENCE_ID not set, skipping audience add');
+    }
 
     // ── 1. Notification email to owner ────────────────────────────────────
     await fetch('https://api.resend.com/emails', {
