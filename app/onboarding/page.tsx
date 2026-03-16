@@ -73,7 +73,7 @@ function OnboardingInner() {
           <div className="w-7 h-7 rounded-lg bg-brand-600 flex items-center justify-center">
             <Zap className="w-3.5 h-3.5 text-white" fill="white" />
           </div>
-          MarketGrowth
+          MarketGrow
         </div>
 
         {/* Progress */}
