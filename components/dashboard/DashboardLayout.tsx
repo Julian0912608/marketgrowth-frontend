@@ -60,7 +60,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
           <div className="w-8 h-8 rounded-lg bg-brand-600 flex items-center justify-center shadow-lg shadow-brand-600/30">
             <Zap className="w-4 h-4 text-white" fill="white" />
           </div>
-          <span className="font-display font-700 text-white text-base">MarketGrowth</span>
+          <span className="font-display font-700 text-white text-base">MarketGrow</span>
         </Link>
       </div>
 
