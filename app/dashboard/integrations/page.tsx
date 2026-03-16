@@ -32,7 +32,7 @@ function StatusBadge({ status }: { status: string }) {
   }[status] ?? { icon: Clock, color: 'text-slate-400', label: status };
 
   return (
-    <div className={`flex items-center gap-1.5 text-xs font-medium ${config.color}`}>
+    <div className={'flex items-center gap-1.5 text-xs font-medium ' + config.color}>
       <config.icon className="w-3.5 h-3.5" />
       {config.label}
     </div>
@@ -56,14 +56,24 @@ export default function IntegrationsPage() {
 
   useEffect(() => { load(); }, []);
 
+  // FIX: gebruik /integrations/connect met platformSlug + shopDomain
+  // en redirect naar authUrl (niet installUrl)
   const handleShopifyInstall = async () => {
     const domain = prompt('Enter your Shopify store domain (e.g. mystore.myshopify.com)');
     if (!domain) return;
+    setError('');
     try {
-      const res = await api.post('/integrations/shopify/install', { shopDomain: domain });
-      window.location.href = res.data.installUrl;
+      const res = await api.post('/integrations/connect', {
+        platformSlug: 'shopify',
+        shopDomain: domain.trim().replace('https://', '').replace('http://', '').replace(/\/$/, ''),
+      });
+      if (res.data.authUrl) {
+        window.location.href = res.data.authUrl;
+      } else {
+        await load();
+      }
     } catch (err: any) {
-      setError(err.response?.data?.error ?? 'Failed to connect Shopify');
+      setError(err.response?.data?.error ?? err.response?.data?.message ?? 'Failed to connect Shopify');
     }
   };
 
@@ -71,10 +81,14 @@ export default function IntegrationsPage() {
     setLoading(true);
     setError('');
     try {
-      await api.post('/integrations/connect', { platformSlug: platformId, ...formData });
-      setConnecting(null);
-      setFormData({});
-      await load();
+      const res = await api.post('/integrations/connect', { platformSlug: platformId, ...formData });
+      if (res.data.authUrl) {
+        window.location.href = res.data.authUrl;
+      } else {
+        setConnecting(null);
+        setFormData({});
+        await load();
+      }
     } catch (err: any) {
       setError(err.response?.data?.error ?? err.response?.data?.message ?? 'Connection failed');
     } finally {
@@ -82,11 +96,10 @@ export default function IntegrationsPage() {
     }
   };
 
-  // ↻ knop triggert altijd full_sync zodat alle historische data opgehaald wordt
   const handleSync = async (id: string) => {
     setSyncing(id);
     try {
-      await api.post(`/integrations/${id}/sync`, { jobType: 'full_sync' });
+      await api.post('/integrations/' + id + '/sync', { jobType: 'full_sync' });
       setTimeout(() => load(), 2000);
     } catch {}
     setSyncing(null);
@@ -95,7 +108,7 @@ export default function IntegrationsPage() {
   const handleDisconnect = async (id: string) => {
     if (!confirm('Disconnect this store? All synced data will remain.')) return;
     try {
-      await api.delete(`/integrations/${id}`);
+      await api.delete('/integrations/' + id);
       await load();
     } catch {}
   };
@@ -125,9 +138,7 @@ export default function IntegrationsPage() {
               const platformMeta = PLATFORMS.find(p => p.id === platformId);
               return (
                 <div key={c.id} className="bg-slate-800/50 border border-slate-700/50 rounded-2xl p-5 flex items-center gap-4">
-                  <div className={`w-10 h-10 rounded-xl border flex items-center justify-center font-display font-700 text-xs ${
-                    platformMeta?.color ?? 'bg-slate-700 text-slate-300'
-                  }`}>
+                  <div className={'w-10 h-10 rounded-xl border flex items-center justify-center font-display font-700 text-xs ' + (platformMeta?.color ?? 'bg-slate-700 text-slate-300')}>
                     {(platformMeta?.name ?? platformId ?? '?')[0].toUpperCase()}
                   </div>
                   <div className="flex-1 min-w-0">
@@ -160,7 +171,7 @@ export default function IntegrationsPage() {
                       className="w-8 h-8 rounded-lg bg-slate-700 hover:bg-slate-600 flex items-center justify-center text-slate-400 hover:text-white transition-colors disabled:opacity-50"
                       title="Full sync"
                     >
-                      <RefreshCw className={`w-3.5 h-3.5 ${syncing === c.id ? 'animate-spin' : ''}`} />
+                      <RefreshCw className={'w-3.5 h-3.5 ' + (syncing === c.id ? 'animate-spin' : '')} />
                     </button>
                     <button
                       onClick={() => handleDisconnect(c.id)}
@@ -188,7 +199,7 @@ export default function IntegrationsPage() {
             return (
               <div key={platform.id} className="bg-slate-800/50 border border-slate-700/50 rounded-2xl p-5">
                 <div className="flex items-center justify-between mb-4">
-                  <div className={`w-10 h-10 rounded-xl border flex items-center justify-center font-display font-800 text-sm ${platform.color}`}>
+                  <div className={'w-10 h-10 rounded-xl border flex items-center justify-center font-display font-800 text-sm ' + platform.color}>
                     {platform.name[0]}
                   </div>
                   {isConnected && (
