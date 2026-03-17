@@ -24,49 +24,37 @@ function formatCurrency(val: number) {
   }).format(val ?? 0);
 }
 
-// Normaliseer datum — PostgreSQL stuurt soms ISO timestamps, soms "YYYY-MM-DD"
 function normalizeDate(raw: string): string {
   if (!raw) return '';
-  // Haal alleen het datum-deel op (voor het T-teken)
   return raw.split('T')[0];
 }
 
 function formatDateLabel(dateStr: string, period: string): string {
-  const d = new Date(dateStr + 'T12:00:00'); // voeg T12 toe om timezone-issues te voorkomen
-  if (period === '7d') {
-    return d.toLocaleDateString('nl-NL', { weekday: 'short', day: 'numeric' });
-  }
-  if (period === '90d') {
-    return d.toLocaleDateString('nl-NL', { month: 'short', day: 'numeric' });
-  }
+  const d = new Date(dateStr + 'T12:00:00');
+  if (period === '7d') return d.toLocaleDateString('nl-NL', { weekday: 'short', day: 'numeric' });
   return d.toLocaleDateString('nl-NL', { month: 'short', day: 'numeric' });
 }
 
-// Custom Recharts tooltip
 function CustomTooltip({ active, payload, label }: any) {
   if (!active || !payload?.length) return null;
   return (
     <div className="bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 shadow-xl">
       <p className="text-slate-400 text-xs mb-1">{label}</p>
-      <p className="text-white font-semibold text-sm">
-        {formatCurrency(payload[0]?.value ?? 0)}
-      </p>
+      <p className="text-white font-semibold text-sm">{formatCurrency(payload[0]?.value ?? 0)}</p>
       {payload[1] && (
-        <p className="text-slate-400 text-xs mt-0.5">
-          {payload[1].name}: {payload[1].value} orders
-        </p>
+        <p className="text-slate-400 text-xs mt-0.5">{payload[1].value} orders</p>
       )}
     </div>
   );
 }
 
 export default function AnalyticsPage() {
-  const [period, setPeriod]         = useState('30d');
-  const [overview, setOverview]     = useState<any>(null);
-  const [daily, setDaily]           = useState<any[]>([]);
-  const [platforms, setPlatforms]   = useState<any[]>([]);
+  const [period, setPeriod]           = useState<'7d' | '30d' | '90d'>('30d');
+  const [overview, setOverview]       = useState<any>(null);
+  const [daily, setDaily]             = useState<any[]>([]);
+  const [platforms, setPlatforms]     = useState<any[]>([]);
   const [topProducts, setTopProducts] = useState<any[]>([]);
-  const [loading, setLoading]       = useState(true);
+  const [loading, setLoading]         = useState(true);
 
   useEffect(() => {
     const load = async () => {
@@ -90,11 +78,11 @@ export default function AnalyticsPage() {
     load();
   }, [period]);
 
-  // Bouw chart data — groepeer per datum, normaliseer ISO timestamps
+  // Bouw volledige datumreeks — vul ontbrekende dagen op met €0
   const chartData = (() => {
     const byDate: Record<string, { revenue: number; orders: number }> = {};
 
-    daily.forEach(d => {
+    daily.forEach((d: any) => {
       const date = normalizeDate(d.date);
       if (!date) return;
       if (!byDate[date]) byDate[date] = { revenue: 0, orders: 0 };
@@ -102,15 +90,24 @@ export default function AnalyticsPage() {
       byDate[date].orders  += parseInt(d.orders_count ?? 0, 10);
     });
 
-    return Object.entries(byDate)
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([date, vals]) => ({
-        date,
-        label:   formatDateLabel(date, period),
-        revenue: Math.round(vals.revenue * 100) / 100,
-        orders:  vals.orders,
-      }));
+    // Genereer alle dagen in de geselecteerde periode
+    const days = period === '7d' ? 7 : period === '90d' ? 90 : 30;
+    const allDates: string[] = [];
+    for (let i = days - 1; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      allDates.push(d.toISOString().split('T')[0]);
+    }
+
+    return allDates.map(date => ({
+      date,
+      label:   formatDateLabel(date, period),
+      revenue: Math.round((byDate[date]?.revenue ?? 0) * 100) / 100,
+      orders:  byDate[date]?.orders ?? 0,
+    }));
   })();
+
+  const daysWithData = chartData.filter(d => d.revenue > 0).length;
 
   const kpis = [
     {
@@ -156,9 +153,7 @@ export default function AnalyticsPage() {
               key={p}
               onClick={() => setPeriod(p)}
               className={`px-4 py-1.5 text-xs font-medium rounded-lg transition-all ${
-                period === p
-                  ? 'bg-blue-600 text-white shadow-sm'
-                  : 'text-slate-400 hover:text-white'
+                period === p ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-400 hover:text-white'
               }`}
             >
               {p === '7d' ? '7 days' : p === '30d' ? '30 days' : '90 days'}
@@ -170,10 +165,7 @@ export default function AnalyticsPage() {
       {/* KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         {kpis.map(card => (
-          <div
-            key={card.label}
-            className="bg-slate-800/50 border border-slate-700/50 rounded-2xl p-5"
-          >
+          <div key={card.label} className="bg-slate-800/50 border border-slate-700/50 rounded-2xl p-5">
             <div className={`w-8 h-8 rounded-lg ${card.color} flex items-center justify-center mb-3`}>
               <card.icon className="w-4 h-4 text-white" />
             </div>
@@ -185,10 +177,7 @@ export default function AnalyticsPage() {
               <div className={`flex items-center gap-1 text-xs mt-1 font-medium ${
                 card.change >= 0 ? 'text-emerald-400' : 'text-rose-400'
               }`}>
-                {card.change >= 0
-                  ? <ArrowUpRight className="w-3 h-3" />
-                  : <ArrowDownRight className="w-3 h-3" />
-                }
+                {card.change >= 0 ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
                 {Math.abs(card.change)}%
               </div>
             )}
@@ -200,18 +189,14 @@ export default function AnalyticsPage() {
       <div className="bg-slate-800/50 border border-slate-700/50 rounded-2xl p-6 mb-6">
         <div className="flex items-center justify-between mb-6">
           <h2 className="font-display font-700 text-white">Revenue over time</h2>
-          {chartData.length > 0 && (
-            <span className="text-xs text-slate-500">{chartData.length} days with data</span>
+          {!loading && (
+            <span className="text-xs text-slate-500">{daysWithData} days with data</span>
           )}
         </div>
 
         {loading ? (
           <div className="h-64 flex items-center justify-center">
             <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
-          </div>
-        ) : chartData.length === 0 ? (
-          <div className="h-64 flex items-center justify-center text-slate-500 text-sm">
-            No data for this period
           </div>
         ) : (
           <ResponsiveContainer width="100%" height={260}>
@@ -228,10 +213,10 @@ export default function AnalyticsPage() {
                 tick={{ fill: '#64748b', fontSize: 11 }}
                 axisLine={false}
                 tickLine={false}
-                interval="preserveStartEnd"
+                interval={period === '7d' ? 0 : period === '30d' ? 4 : 9}
               />
               <YAxis
-                tickFormatter={v => `€${v >= 1000 ? `${(v / 1000).toFixed(1)}k` : v}`}
+                tickFormatter={v => `€${v >= 1000 ? (v / 1000).toFixed(1) + 'k' : v}`}
                 tick={{ fill: '#64748b', fontSize: 11 }}
                 axisLine={false}
                 tickLine={false}
@@ -260,9 +245,7 @@ export default function AnalyticsPage() {
           <h2 className="font-display font-700 text-white mb-5">By platform</h2>
           {loading ? (
             <div className="space-y-3">
-              {[1,2].map(i => (
-                <div key={i} className="animate-pulse h-8 bg-slate-700/50 rounded-lg" />
-              ))}
+              {[1, 2].map(i => <div key={i} className="animate-pulse h-8 bg-slate-700/50 rounded-lg" />)}
             </div>
           ) : platforms.length === 0 ? (
             <p className="text-slate-500 text-sm">No data</p>
@@ -281,9 +264,7 @@ export default function AnalyticsPage() {
                       </div>
                       <div className="flex items-center gap-3 text-xs text-slate-400">
                         <span>{Number(p.orders_count).toLocaleString('nl-NL')} orders</span>
-                        <span className="text-white font-medium">
-                          {formatCurrency(parseFloat(p.revenue))}
-                        </span>
+                        <span className="text-white font-medium">{formatCurrency(parseFloat(p.revenue))}</span>
                         <span className="text-slate-500">{share}%</span>
                       </div>
                     </div>
@@ -305,9 +286,7 @@ export default function AnalyticsPage() {
           <h2 className="font-display font-700 text-white mb-5">Top products</h2>
           {loading ? (
             <div className="space-y-3">
-              {[1,2,3].map(i => (
-                <div key={i} className="animate-pulse h-10 bg-slate-700/50 rounded-lg" />
-              ))}
+              {[1, 2, 3].map(i => <div key={i} className="animate-pulse h-10 bg-slate-700/50 rounded-lg" />)}
             </div>
           ) : topProducts.length === 0 ? (
             <p className="text-slate-500 text-sm">No data</p>
