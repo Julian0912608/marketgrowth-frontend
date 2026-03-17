@@ -10,7 +10,7 @@ const PLATFORM_LABELS: Record<string, string> = {
 };
 
 function formatCurrency(val: number) {
-  return new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(val ?? 0);
+  return new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(val ?? 0);
 }
 
 function formatNumber(val: number) {
