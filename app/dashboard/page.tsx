@@ -50,7 +50,7 @@ interface Credits {
 function formatCurrency(val: string | number, currency = 'EUR') {
   const n = typeof val === 'string' ? parseFloat(val) : val;
   if (isNaN(n)) return '—';
-  return new Intl.NumberFormat('nl-NL', { style: 'currency', currency, minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(n);
+  return new Intl.NumberFormat('nl-NL', { style: 'currency', currency, minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
 }
 
 function ChangeTag({ change }: { change?: number }) {
