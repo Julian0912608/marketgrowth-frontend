@@ -19,8 +19,9 @@ const PLATFORM_LABELS: Record<string, string> = {
 
 function formatCurrency(val: number) {
   return new Intl.NumberFormat('nl-NL', {
-    style: 'currency', currency: 'EUR', maximumFractionDigits: 0,
-  }).format(val);
+    style: 'currency', currency: 'EUR',
+    minimumFractionDigits: 2, maximumFractionDigits: 2,
+  }).format(val ?? 0);
 }
 
 // Normaliseer datum — PostgreSQL stuurt soms ISO timestamps, soms "YYYY-MM-DD"
