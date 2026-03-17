@@ -107,38 +107,28 @@ export default function DashboardPage() {
   useEffect(() => {
     const load = async () => {
       setLoading(true);
-      try {
-        const [ov, tp, int, ins, cr] = await Promise.allSettled([
-          api.get('/analytics/overview?period=7d'),
-          api.get('/analytics/top-products?limit=3&period=7d'),
-          api.get('/integrations'),
-          api.get('/ai/insights'),
-          api.get('/ai/credits'),
-        ]);
 
-        if (ov.status === 'fulfilled')  setOverview(ov.value.data);
-        if (tp.status === 'fulfilled')  setTopProducts(tp.value.data.products ?? []);
-        if (int.status === 'fulfilled') setIntegrations(int.value.data ?? []);
-        if (ins.status === 'fulfilled') setInsight(ins.value.data);
-        if (cr.status === 'fulfilled')  setCredits(cr.value.data);
+      // Fase 1 — kritieke data parallel (winkels + dagcijfers)
+      // Dit vult de KPI cards direct
+      const [intRes, dailyRes] = await Promise.allSettled([
+        api.get('/integrations'),
+        api.get('/analytics/daily?period=7d'),
+      ]);
 
-        // Vandaag vs gisteren via dagelijkse data
-        const daily = await api.get('/analytics/daily?period=7d');
-        const rows  = daily.data.data ?? [];
-        const today = new Date().toISOString().split('T')[0];
+      if (intRes.status === 'fulfilled') setIntegrations(intRes.value.data ?? []);
+
+      if (dailyRes.status === 'fulfilled') {
+        const rows = dailyRes.value.data.data ?? [];
+        const today     = new Date().toISOString().split('T')[0];
         const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
-
         const todayData = rows.filter((r: any) => r.date?.startsWith(today));
         const yestData  = rows.filter((r: any) => r.date?.startsWith(yesterday));
-
-        const sumRevenue = (arr: any[]) => arr.reduce((s: number, r: any) => s + parseFloat(r.revenue ?? 0), 0);
-        const sumOrders  = (arr: any[]) => arr.reduce((s: number, r: any) => s + parseInt(r.orders_count ?? 0), 0);
-
-        const todayRev  = sumRevenue(todayData);
-        const yestRev   = sumRevenue(yestData);
-        const todayOrd  = sumOrders(todayData);
-        const yestOrd   = sumOrders(yestData);
-
+        const sumRev = (arr: any[]) => arr.reduce((s: number, r: any) => s + parseFloat(r.revenue ?? 0), 0);
+        const sumOrd = (arr: any[]) => arr.reduce((s: number, r: any) => s + parseInt(r.orders_count ?? 0), 0);
+        const todayRev = sumRev(todayData);
+        const yestRev  = sumRev(yestData);
+        const todayOrd = sumOrd(todayData);
+        const yestOrd  = sumOrd(yestData);
         setToday({
           revenue:  todayRev,
           orders:   todayOrd,
@@ -148,8 +138,23 @@ export default function DashboardPage() {
             orders:  yestOrd > 0 ? ((todayOrd - yestOrd) / yestOrd) * 100 : 0,
           },
         });
-      } catch {}
+      }
+
+      // Pagina tonen zodra kritieke data binnen is
       setLoading(false);
+
+      // Fase 2 — secundaire data (overview, top products, AI, credits)
+      // Laadt op de achtergrond zonder loading state
+      const [ov, tp, ins, cr] = await Promise.allSettled([
+        api.get('/analytics/overview?period=7d'),
+        api.get('/analytics/top-products?limit=3&period=7d'),
+        api.get('/ai/insights'),
+        api.get('/ai/credits'),
+      ]);
+      if (ov.status === 'fulfilled')  setOverview(ov.value.data);
+      if (tp.status === 'fulfilled')  setTopProducts(tp.value.data.products ?? []);
+      if (ins.status === 'fulfilled') setInsight(ins.value.data);
+      if (cr.status === 'fulfilled')  setCredits(cr.value.data);
     };
     load();
   }, []);
