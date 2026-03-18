@@ -73,7 +73,7 @@ export default function VideoScriptsPage() {
   };
 
   return (
-    <div className="p-6 max-w-6xl mx-auto">
+    <div className="p-6 max-w-6xl mx-auto min-h-screen bg-slate-900">
 
       {/* Header */}
       <div className="flex items-center gap-3 mb-2">
