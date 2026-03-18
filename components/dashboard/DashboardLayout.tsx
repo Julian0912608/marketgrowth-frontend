@@ -5,19 +5,20 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
   LayoutDashboard, TrendingUp, ShoppingBag, Megaphone,
-  Plug, Settings, LogOut, Zap, Bell, Menu, Sparkles
+  Plug, Settings, LogOut, Zap, Bell, Menu, Sparkles, Instagram
 } from 'lucide-react';
 import { useAuthStore } from '@/lib/store';
 import { api } from '@/lib/api';
 
 const navItems = [
-  { label: 'Overview',     href: '/dashboard',              icon: LayoutDashboard },
-  { label: 'Sales',        href: '/dashboard/analytics',    icon: TrendingUp },
-  { label: 'Products',     href: '/dashboard/products',     icon: ShoppingBag },
-  { label: 'Advertising',  href: '/dashboard/ads',          icon: Megaphone },
-  { label: 'AI Insights',  href: '/dashboard/ai-insights',  icon: Sparkles },
-  { label: 'Integrations', href: '/dashboard/integrations', icon: Plug },
-  { label: 'Settings',     href: '/settings',               icon: Settings },
+  { label: 'Overview',        href: '/dashboard',                icon: LayoutDashboard },
+  { label: 'Sales',           href: '/dashboard/analytics',     icon: TrendingUp },
+  { label: 'Products',        href: '/dashboard/products',      icon: ShoppingBag },
+  { label: 'Advertising',     href: '/dashboard/ads',           icon: Megaphone },
+  { label: 'AI Insights',     href: '/dashboard/ai-insights',   icon: Sparkles },
+  { label: 'Social Content',  href: '/dashboard/social-content', icon: Instagram },  
+  { label: 'Integrations',    href: '/dashboard/integrations',  icon: Plug },
+  { label: 'Settings',        href: '/settings',                icon: Settings },
 ];
 
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
