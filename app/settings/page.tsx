@@ -2,9 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import {
-  User, CreditCard, Bell, Shield,
+  User, CreditCard, Bell, Shield, Zap,
   Check, Loader2, ArrowUpRight,
-  Download, X, CheckCircle, Zap,
+  Download, X, CheckCircle,
 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/lib/store';
@@ -41,10 +41,10 @@ const PLANS = [
 ];
 
 const TABS = [
-  { id: 'profile',  label: 'Profiel',       icon: User },
-  { id: 'billing',  label: 'Abonnement',    icon: CreditCard },
-  { id: 'security', label: 'Beveiliging',   icon: Shield },
-  { id: 'notifications', label: 'Notificaties', icon: Bell },
+  { id: 'profile',       label: 'Profiel',       icon: User },
+  { id: 'billing',       label: 'Abonnement',    icon: CreditCard },
+  { id: 'security',      label: 'Beveiliging',   icon: Shield },
+  { id: 'notifications', label: 'Notificaties',  icon: Bell },
 ];
 
 const card  = 'bg-slate-800/50 border border-slate-700/50 rounded-2xl p-6';
@@ -52,26 +52,27 @@ const input = 'w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2.
 
 export default function SettingsPage() {
   const { user, updateUser } = useAuthStore();
-  const [activeTab, setActiveTab] = useState('profile');
-  const [billing, setBilling]     = useState<BillingOverview | null>(null);
-  const [billingLoading, setBillingLoading] = useState(false);
-  const [upgradeLoading, setUpgradeLoading] = useState<string | null>(null);
-  const [cancelLoading, setCancelLoading]   = useState(false);
-  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
-  const [toast, setToast] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
 
-  // Profile state
-  const [firstName, setFirstName] = useState('');
-  const [lastName,  setLastName]  = useState('');
+  const [activeTab,         setActiveTab]         = useState('profile');
+  const [billing,           setBilling]           = useState<BillingOverview | null>(null);
+  const [billingLoading,    setBillingLoading]    = useState(false);
+  const [upgradeLoading,    setUpgradeLoading]    = useState<string | null>(null);
+  const [cancelLoading,     setCancelLoading]     = useState(false);
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [toast,             setToast]             = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
+
+  // Profile
+  const [firstName,      setFirstName]      = useState('');
+  const [lastName,       setLastName]       = useState('');
   const [profileLoading, setProfileLoading] = useState(false);
 
-  // Security state
+  // Security
   const [currentPw, setCurrentPw] = useState('');
   const [newPw,     setNewPw]     = useState('');
   const [confirmPw, setConfirmPw] = useState('');
   const [pwLoading, setPwLoading] = useState(false);
 
-  // Notifications state
+  // Notifications
   const [notifWeekly,  setNotifWeekly]  = useState(true);
   const [notifAlerts,  setNotifAlerts]  = useState(true);
   const [notifProduct, setNotifProduct] = useState(false);
@@ -107,6 +108,8 @@ export default function SettingsPage() {
     try {
       const res = await api.patch('/auth/profile', { firstName, lastName });
       updateUser({ firstName: res.data.firstName, lastName: res.data.lastName });
+      setFirstName(res.data.firstName ?? firstName);
+      setLastName(res.data.lastName   ?? lastName);
       showToast('success', 'Profiel opgeslagen!');
     } catch (e: any) {
       showToast('error', e.response?.data?.message ?? 'Er ging iets mis.');
@@ -114,7 +117,7 @@ export default function SettingsPage() {
   };
 
   const handleChangePassword = async () => {
-    if (newPw.length < 8) { showToast('error', 'Nieuw wachtwoord moet minimaal 8 tekens zijn.'); return; }
+    if (newPw.length < 8)    { showToast('error', 'Nieuw wachtwoord moet minimaal 8 tekens zijn.'); return; }
     if (newPw !== confirmPw) { showToast('error', 'Wachtwoorden komen niet overeen.'); return; }
     setPwLoading(true);
     try {
@@ -154,21 +157,24 @@ export default function SettingsPage() {
     } finally { setCancelLoading(false); }
   };
 
-  const currentPlan = billing?.planSlug ?? user?.planSlug ?? 'starter';
+  const currentPlan = billing?.planSlug ?? (user as any)?.planSlug ?? 'starter';
   const isTrialing  = billing?.status === 'trialing';
-  const isCancelled = billing?.cancelAtPeriodEnd;
+  const isCancelled = billing?.cancelAtPeriodEnd ?? false;
 
   return (
     <div className="p-6 max-w-4xl mx-auto">
 
       {/* Toast */}
       {toast && (
-        <div className={`fixed top-6 right-6 z-50 flex items-center gap-3 px-4 py-3 rounded-xl shadow-lg text-sm font-medium transition-all ${
+        <div className={`fixed top-6 right-6 z-50 flex items-center gap-3 px-4 py-3 rounded-xl shadow-lg text-sm font-medium ${
           toast.type === 'success'
             ? 'bg-emerald-500/20 border border-emerald-500/30 text-emerald-300'
             : 'bg-rose-500/20 border border-rose-500/30 text-rose-300'
         }`}>
-          {toast.type === 'success' ? <CheckCircle className="w-4 h-4" /> : <X className="w-4 h-4" />}
+          {toast.type === 'success'
+            ? <CheckCircle className="w-4 h-4" />
+            : <X className="w-4 h-4" />
+          }
           {toast.msg}
         </div>
       )}
@@ -201,7 +207,6 @@ export default function SettingsPage() {
         <div className={card}>
           <h2 className="font-display font-700 text-white mb-6">Persoonlijke gegevens</h2>
 
-          {/* Avatar */}
           <div className="flex items-center gap-4 mb-6">
             <div className="w-14 h-14 rounded-2xl bg-brand-600 flex items-center justify-center font-display font-700 text-white text-lg">
               {firstName?.[0]?.toUpperCase() ?? '?'}
@@ -267,7 +272,7 @@ export default function SettingsPage() {
             </div>
           ) : billing ? (
             <div className={card}>
-              <div className="flex items-start justify-between mb-6">
+              <div className="flex items-start justify-between mb-4">
                 <div>
                   <h2 className="font-display font-700 text-white">Huidig abonnement</h2>
                   <p className="text-sm text-slate-400 mt-0.5">
@@ -286,7 +291,9 @@ export default function SettingsPage() {
               {billing.currentPeriodEnd && (
                 <p className="text-xs text-slate-500 mb-4">
                   {isCancelled ? 'Toegang tot' : 'Volgende facturatie op'}{' '}
-                  {new Date(billing.currentPeriodEnd).toLocaleDateString('nl-NL', { day: 'numeric', month: 'long', year: 'numeric' })}
+                  {new Date(billing.currentPeriodEnd).toLocaleDateString('nl-NL', {
+                    day: 'numeric', month: 'long', year: 'numeric',
+                  })}
                 </p>
               )}
 
@@ -301,7 +308,9 @@ export default function SettingsPage() {
 
               {showCancelConfirm && (
                 <div className="mt-4 p-4 bg-rose-500/10 border border-rose-500/20 rounded-xl">
-                  <p className="text-sm text-rose-300 mb-3">Weet je zeker dat je wilt opzeggen? Je behoudt toegang tot het einde van je betaalperiode.</p>
+                  <p className="text-sm text-rose-300 mb-3">
+                    Weet je zeker dat je wilt opzeggen? Je behoudt toegang tot het einde van je betaalperiode.
+                  </p>
                   <div className="flex gap-2">
                     <button
                       onClick={handleCancel}
@@ -332,16 +341,20 @@ export default function SettingsPage() {
               {PLANS.map(plan => {
                 const isCurrent = currentPlan === plan.slug;
                 return (
-                  <div key={plan.slug} className={`${card} relative ${plan.popular ? 'border-brand-500/50' : ''}`}>
+                  <div
+                    key={plan.slug}
+                    className={`${card} relative ${plan.popular ? 'border-brand-500/50' : ''}`}
+                  >
                     {plan.popular && (
-                      <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-brand-600 text-white text-xs font-semibold px-3 py-1 rounded-full">
+                      <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-brand-600 text-white text-xs font-semibold px-3 py-1 rounded-full whitespace-nowrap">
                         Meest gekozen
                       </div>
                     )}
                     <div className="mb-4">
                       <div className="font-display font-700 text-white text-lg">{plan.name}</div>
                       <div className="text-2xl font-display font-800 text-white mt-1">
-                        €{plan.price}<span className="text-sm font-normal text-slate-400">/maand</span>
+                        €{plan.price}
+                        <span className="text-sm font-normal text-slate-400">/maand</span>
                       </div>
                     </div>
                     <ul className="space-y-2 mb-6">
@@ -353,7 +366,7 @@ export default function SettingsPage() {
                       ))}
                     </ul>
                     <button
-                      onClick={() => !isCurrent && handleUpgrade(plan.slug)}
+                      onClick={() => { if (!isCurrent) handleUpgrade(plan.slug); }}
                       disabled={isCurrent || upgradeLoading !== null}
                       className={`w-full py-2 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2 ${
                         isCurrent
@@ -377,13 +390,18 @@ export default function SettingsPage() {
               <h2 className="font-display font-700 text-white mb-4">Factuurhistorie</h2>
               <div className="space-y-2">
                 {billing.invoices.map(inv => (
-                  <div key={inv.id} className="flex items-center justify-between py-2 border-b border-slate-700/50 last:border-0">
+                  <div
+                    key={inv.id}
+                    className="flex items-center justify-between py-2 border-b border-slate-700/50 last:border-0"
+                  >
                     <div>
                       <div className="text-sm text-white">
-                        {new Date(inv.date).toLocaleDateString('nl-NL', { day: 'numeric', month: 'long', year: 'numeric' })}
+                        {new Date(inv.date).toLocaleDateString('nl-NL', {
+                          day: 'numeric', month: 'long', year: 'numeric',
+                        })}
                       </div>
                       <div className="text-xs text-slate-500">
-                        €{(inv.amount / 100).toFixed(2)} — {inv.status}
+                        €{Number(inv.amount).toFixed(2)} — {inv.status}
                       </div>
                     </div>
                     {inv.downloadUrl && (
@@ -440,7 +458,7 @@ export default function SettingsPage() {
                 placeholder="••••••••"
               />
             </div>
-            {newPw && confirmPw && newPw !== confirmPw && (
+            {newPw.length > 0 && confirmPw.length > 0 && newPw !== confirmPw && (
               <p className="text-xs text-rose-400">Wachtwoorden komen niet overeen.</p>
             )}
             <button
@@ -459,23 +477,34 @@ export default function SettingsPage() {
       {activeTab === 'notifications' && (
         <div className={card}>
           <h2 className="font-display font-700 text-white mb-6">E-mailnotificaties</h2>
-          <div className="space-y-4">
-            {[
-              { key: 'weekly',  label: 'Wekelijks AI rapport',     desc: 'Elke maandag een samenvatting van je prestaties', value: notifWeekly,  set: setNotifWeekly },
-              { key: 'alerts',  label: 'Slimme alerts',            desc: 'Meldingen bij ongewone veranderingen in je data',  value: notifAlerts,  set: setNotifAlerts },
-              { key: 'product', label: 'Productupdates',           desc: 'Nieuws over nieuwe functies en verbeteringen',     value: notifProduct, set: setNotifProduct },
-            ].map(item => (
-              <div key={item.key} className="flex items-center justify-between py-3 border-b border-slate-700/50 last:border-0">
+          <div className="space-y-1">
+            {([
+              { key: 'weekly',  label: 'Wekelijks AI rapport',  desc: 'Elke maandag een samenvatting van je prestaties', value: notifWeekly,  set: setNotifWeekly },
+              { key: 'alerts',  label: 'Slimme alerts',         desc: 'Meldingen bij ongewone veranderingen in je data',  value: notifAlerts,  set: setNotifAlerts },
+              { key: 'product', label: 'Productupdates',        desc: 'Nieuws over nieuwe functies en verbeteringen',     value: notifProduct, set: setNotifProduct },
+            ] as const).map(item => (
+              <div
+                key={item.key}
+                className="flex items-center justify-between py-4 border-b border-slate-700/50 last:border-0"
+              >
                 <div>
                   <div className="text-sm font-medium text-white">{item.label}</div>
                   <div className="text-xs text-slate-500 mt-0.5">{item.desc}</div>
                 </div>
                 <button
                   onClick={() => item.set(!item.value)}
-                  className={`relative w-10 h-5.5 rounded-full transition-colors ${item.value ? 'bg-brand-600' : 'bg-slate-700'}`}
+                  className={`relative w-10 rounded-full transition-colors flex-shrink-0 ${
+                    item.value ? 'bg-brand-600' : 'bg-slate-700'
+                  }`}
                   style={{ height: '22px' }}
+                  aria-checked={item.value}
+                  role="switch"
                 >
-                  <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${item.value ? 'translate-x-5' : 'translate-x-0.5'}`} />
+                  <span
+                    className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${
+                      item.value ? 'translate-x-5' : 'translate-x-0.5'
+                    }`}
+                  />
                 </button>
               </div>
             ))}
@@ -488,6 +517,7 @@ export default function SettingsPage() {
           </button>
         </div>
       )}
+
     </div>
   );
 }
