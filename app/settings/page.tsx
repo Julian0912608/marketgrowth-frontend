@@ -41,10 +41,10 @@ const PLANS = [
 ];
 
 const TABS = [
-  { id: 'profile',       label: 'Profiel',       icon: User },
-  { id: 'billing',       label: 'Abonnement',    icon: CreditCard },
-  { id: 'security',      label: 'Beveiliging',   icon: Shield },
-  { id: 'notifications', label: 'Notificaties',  icon: Bell },
+  { id: 'profile',       label: 'Profiel',      icon: User },
+  { id: 'billing',       label: 'Abonnement',   icon: CreditCard },
+  { id: 'security',      label: 'Beveiliging',  icon: Shield },
+  { id: 'notifications', label: 'Notificaties', icon: Bell },
 ];
 
 const card  = 'bg-slate-800/50 border border-slate-700/50 rounded-2xl p-6';
@@ -61,18 +61,15 @@ export default function SettingsPage() {
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [toast,             setToast]             = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
 
-  // Profile
   const [firstName,      setFirstName]      = useState('');
   const [lastName,       setLastName]       = useState('');
   const [profileLoading, setProfileLoading] = useState(false);
 
-  // Security
   const [currentPw, setCurrentPw] = useState('');
   const [newPw,     setNewPw]     = useState('');
   const [confirmPw, setConfirmPw] = useState('');
   const [pwLoading, setPwLoading] = useState(false);
 
-  // Notifications
   const [notifWeekly,  setNotifWeekly]  = useState(true);
   const [notifAlerts,  setNotifAlerts]  = useState(true);
   const [notifProduct, setNotifProduct] = useState(false);
@@ -98,8 +95,11 @@ export default function SettingsPage() {
     try {
       const res = await api.get('/billing/overview');
       setBilling(res.data);
-    } catch { /* nog geen abonnement */ }
-    finally { setBillingLoading(false); }
+    } catch {
+      // nog geen abonnement
+    } finally {
+      setBillingLoading(false);
+    }
   };
 
   const handleSaveProfile = async () => {
@@ -113,7 +113,9 @@ export default function SettingsPage() {
       showToast('success', 'Profiel opgeslagen!');
     } catch (e: any) {
       showToast('error', e.response?.data?.message ?? 'Er ging iets mis.');
-    } finally { setProfileLoading(false); }
+    } finally {
+      setProfileLoading(false);
+    }
   };
 
   const handleChangePassword = async () => {
@@ -122,11 +124,15 @@ export default function SettingsPage() {
     setPwLoading(true);
     try {
       await api.post('/auth/change-password', { currentPassword: currentPw, newPassword: newPw });
-      setCurrentPw(''); setNewPw(''); setConfirmPw('');
+      setCurrentPw('');
+      setNewPw('');
+      setConfirmPw('');
       showToast('success', 'Wachtwoord succesvol gewijzigd!');
     } catch (e: any) {
       showToast('error', e.response?.data?.message ?? 'Er ging iets mis.');
-    } finally { setPwLoading(false); }
+    } finally {
+      setPwLoading(false);
+    }
   };
 
   const handleUpgrade = async (planSlug: string) => {
@@ -142,7 +148,9 @@ export default function SettingsPage() {
       }
     } catch (e: any) {
       showToast('error', e.response?.data?.message ?? 'Er ging iets mis.');
-    } finally { setUpgradeLoading(null); }
+    } finally {
+      setUpgradeLoading(null);
+    }
   };
 
   const handleCancel = async () => {
@@ -154,7 +162,9 @@ export default function SettingsPage() {
       showToast('success', 'Abonnement opgezegd. Toegang loopt door tot einde periode.');
     } catch (e: any) {
       showToast('error', e.response?.data?.message ?? 'Er ging iets mis.');
-    } finally { setCancelLoading(false); }
+    } finally {
+      setCancelLoading(false);
+    }
   };
 
   const currentPlan = billing?.planSlug ?? (user as any)?.planSlug ?? 'starter';
@@ -164,7 +174,6 @@ export default function SettingsPage() {
   return (
     <div className="p-6 max-w-4xl mx-auto">
 
-      {/* Toast */}
       {toast && (
         <div className={`fixed top-6 right-6 z-50 flex items-center gap-3 px-4 py-3 rounded-xl shadow-lg text-sm font-medium ${
           toast.type === 'success'
@@ -184,7 +193,6 @@ export default function SettingsPage() {
         <p className="text-slate-400 text-sm">Beheer je account en abonnement</p>
       </div>
 
-      {/* Tabs */}
       <div className="flex gap-1 mb-8 bg-slate-800/50 rounded-xl p-1 w-fit">
         {TABS.map(tab => (
           <button
@@ -202,7 +210,6 @@ export default function SettingsPage() {
         ))}
       </div>
 
-      {/* ── PROFIEL ── */}
       {activeTab === 'profile' && (
         <div className={card}>
           <h2 className="font-display font-700 text-white mb-6">Persoonlijke gegevens</h2>
@@ -263,7 +270,6 @@ export default function SettingsPage() {
         </div>
       )}
 
-      {/* ── ABONNEMENT ── */}
       {activeTab === 'billing' && (
         <div className="space-y-6">
           {billingLoading ? (
@@ -332,7 +338,6 @@ export default function SettingsPage() {
             </div>
           ) : null}
 
-          {/* Plan keuze */}
           <div>
             <h2 className="font-display font-700 text-white mb-4">
               {billing ? 'Pakket wijzigen' : 'Kies een pakket'}
@@ -343,9 +348,9 @@ export default function SettingsPage() {
                 return (
                   <div
                     key={plan.slug}
-                    className={`${card} relative ${plan.popular ? 'border-brand-500/50' : ''}`}
+                    className={`${card} relative ${(plan as any).popular ? 'border-brand-500/50' : ''}`}
                   >
-                    {plan.popular && (
+                    {(plan as any).popular && (
                       <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-brand-600 text-white text-xs font-semibold px-3 py-1 rounded-full whitespace-nowrap">
                         Meest gekozen
                       </div>
@@ -384,7 +389,6 @@ export default function SettingsPage() {
             </div>
           </div>
 
-          {/* Facturen */}
           {billing?.invoices && billing.invoices.length > 0 && (
             <div className={card}>
               <h2 className="font-display font-700 text-white mb-4">Factuurhistorie</h2>
@@ -405,7 +409,7 @@ export default function SettingsPage() {
                       </div>
                     </div>
                     {inv.downloadUrl && (
-                      
+                      <a
                         href={inv.downloadUrl}
                         target="_blank"
                         rel="noopener noreferrer"
@@ -423,7 +427,6 @@ export default function SettingsPage() {
         </div>
       )}
 
-      {/* ── BEVEILIGING ── */}
       {activeTab === 'security' && (
         <div className={card}>
           <h2 className="font-display font-700 text-white mb-6">Wachtwoord wijzigen</h2>
@@ -473,16 +476,15 @@ export default function SettingsPage() {
         </div>
       )}
 
-      {/* ── NOTIFICATIES ── */}
       {activeTab === 'notifications' && (
         <div className={card}>
           <h2 className="font-display font-700 text-white mb-6">E-mailnotificaties</h2>
           <div className="space-y-1">
-            {([
-              { key: 'weekly',  label: 'Wekelijks AI rapport',  desc: 'Elke maandag een samenvatting van je prestaties', value: notifWeekly,  set: setNotifWeekly },
-              { key: 'alerts',  label: 'Slimme alerts',         desc: 'Meldingen bij ongewone veranderingen in je data',  value: notifAlerts,  set: setNotifAlerts },
-              { key: 'product', label: 'Productupdates',        desc: 'Nieuws over nieuwe functies en verbeteringen',     value: notifProduct, set: setNotifProduct },
-            ] as const).map(item => (
+            {[
+              { key: 'weekly',  label: 'Wekelijks AI rapport',  desc: 'Elke maandag een samenvatting van je prestaties', value: notifWeekly,  setter: setNotifWeekly },
+              { key: 'alerts',  label: 'Slimme alerts',         desc: 'Meldingen bij ongewone veranderingen in je data',  value: notifAlerts,  setter: setNotifAlerts },
+              { key: 'product', label: 'Productupdates',        desc: 'Nieuws over nieuwe functies en verbeteringen',     value: notifProduct, setter: setNotifProduct },
+            ].map(item => (
               <div
                 key={item.key}
                 className="flex items-center justify-between py-4 border-b border-slate-700/50 last:border-0"
@@ -492,13 +494,13 @@ export default function SettingsPage() {
                   <div className="text-xs text-slate-500 mt-0.5">{item.desc}</div>
                 </div>
                 <button
-                  onClick={() => item.set(!item.value)}
+                  onClick={() => item.setter(!item.value)}
+                  role="switch"
+                  aria-checked={item.value}
                   className={`relative w-10 rounded-full transition-colors flex-shrink-0 ${
                     item.value ? 'bg-brand-600' : 'bg-slate-700'
                   }`}
                   style={{ height: '22px' }}
-                  aria-checked={item.value}
-                  role="switch"
                 >
                   <span
                     className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${
