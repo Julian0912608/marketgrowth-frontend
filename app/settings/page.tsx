@@ -27,16 +27,16 @@ interface BillingOverview {
 
 const PLANS = [
   {
-    slug: 'starter', name: 'Starter', price: 49,
-    features: ['1 webshop', '500 AI credits / maand', 'Sales dashboard', 'Wekelijks AI rapport', 'E-mail support'],
+    slug: 'starter', name: 'Starter', price: 20,
+    features: ['1 webshop', '100 AI credits / maand', 'Sales dashboard', 'Order & omzet analyse', 'Wekelijks AI rapport', 'E-mail support'],
   },
   {
-    slug: 'growth', name: 'Growth', price: 99, popular: true,
-    features: ['3 webshops', '5.000 AI credits / maand', 'Alles van Starter', 'Dagelijkse AI inzichten', 'Slimme alerts', 'Prioriteit support'],
+    slug: 'growth', name: 'Growth', price: 49, popular: true,
+    features: ['3 webshops', '2.000 AI credits / maand', 'Alles van Starter', 'AI product aanbevelingen', 'Advertentie analyse', 'Klant LTV prognose', 'Dagelijkse AI inzichten', 'Rapportage export', 'Prioriteit support'],
   },
   {
-    slug: 'scale', name: 'Scale', price: 249,
-    features: ['Onbeperkte webshops', 'Onbeperkte AI credits', 'Alles van Growth', 'Maatwerk AI rapporten', 'Dedicated support', 'API toegang'],
+    slug: 'scale', name: 'Scale', price: 150,
+    features: ['Onbeperkte webshops', 'Onbeperkte AI credits', 'Alles van Growth', 'AI advertentie optimalisatie', 'White-label dashboard', 'Team accounts', 'API toegang', 'Dedicated account manager'],
   },
 ];
 
