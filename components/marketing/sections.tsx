@@ -331,21 +331,30 @@ export function AdCreative() {
 // ── Pricing ───────────────────────────────────────────────────
 const plans = [
   {
-    slug: 'starter', name: 'Starter', price: 49, popular: false,
-    desc: 'Perfect for solo entrepreneurs just getting started.',
-    features: ['1 connected store', '500 AI credits / month', 'Sales dashboard', 'Weekly AI report', 'Email support'],
+    slug: 'starter',
+    name: 'Starter',
+    price: 20,
+    popular: false,
+    desc: 'Perfect for entrepreneurs just starting with data-driven growth.',
+    features: ['1 connected store', '100 AI credits / month', 'Sales dashboard', 'Order & revenue analytics', 'Weekly AI report', 'Email support'],
     cta: 'Start free trial',
   },
   {
-    slug: 'growth', name: 'Growth', price: 99, popular: true,
-    desc: 'For growing stores that need deeper insights.',
-    features: ['3 connected stores', '5,000 AI credits / month', 'Everything in Starter', 'Daily AI insights', 'Smart alerts', 'Priority support'],
+    slug: 'growth',
+    name: 'Growth',
+    price: 49,
+    popular: true,
+    desc: 'For growing stores that need deeper insights and AI recommendations.',
+    features: ['3 connected stores', '2,000 AI credits / month', 'Everything in Starter', 'AI product recommendations', 'Ad analytics', 'Customer LTV forecasting', 'Daily AI briefing', 'Report export', 'Priority support'],
     cta: 'Start free trial',
   },
   {
-    slug: 'scale', name: 'Scale', price: 249, popular: false,
+    slug: 'scale',
+    name: 'Scale',
+    price: 150,
+    popular: false,
     desc: 'For established brands and agencies managing multiple stores.',
-    features: ['Unlimited stores', 'Unlimited AI credits', 'Everything in Growth', 'Custom AI recommendations', 'API access', 'Dedicated account manager'],
+    features: ['Unlimited stores', 'Unlimited AI credits', 'Everything in Growth', 'AI ad optimisation', 'White-label dashboard', 'Team accounts', 'API access', 'Dedicated account manager'],
     cta: 'Contact sales',
   },
 ];
