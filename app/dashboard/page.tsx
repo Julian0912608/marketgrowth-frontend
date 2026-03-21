@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useAuthStore } from '@/lib/store';
 import { useRouter } from 'next/navigation';
+import { OnboardingChecklist } from '@/components/dashboard/OnboardingChecklist';
 import {
   TrendingUp, ShoppingCart, Zap, Store,
   ArrowUpRight, ArrowDownRight, Sparkles,
@@ -69,7 +70,7 @@ const PLATFORM_COLORS: Record<string, string> = {
 };
 
 function formatCurrency(val: number) {
-  return new Intl.NumberFormat('nl-NL', {
+   new Intl.NumberFormat('nl-NL', {
     style: 'currency', currency: 'EUR',
     minimumFractionDigits: 2, maximumFractionDigits: 2,
   }).format(val ?? 0);
@@ -167,6 +168,7 @@ export default function DashboardPage() {
 
   return (
     <div className="p-6 max-w-5xl mx-auto">
+      <OnboardingChecklist />
 
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
