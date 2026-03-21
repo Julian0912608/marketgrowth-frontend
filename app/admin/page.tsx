@@ -80,9 +80,12 @@ interface KPIs {
 // ── API helper — praat met je Railway backend via admin endpoints ──
 const adminApi = {
   headers: () => ({
-    'Content-Type': 'application/json',
-    'x-admin-token': process.env.NEXT_PUBLIC_ADMIN_SECRET || '',
-  }),
+  'Content-Type': 'application/json',
+  'x-admin-token': document.cookie
+    .split('; ')
+    .find(r => r.startsWith('admin_token='))
+    ?.split('=')[1] || '',
+}),
 base: (process.env.NEXT_PUBLIC_API_URL || 'https://marketgrowth-production.up.railway.app') + '/api',
   
   async get<T>(path: string): Promise<T> {
