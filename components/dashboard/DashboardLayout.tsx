@@ -9,6 +9,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { TrialBanner } from '@/components/dashboard/TrialBanner';
 import { usePathname, useRouter } from 'next/navigation';
 import {
   LayoutDashboard, TrendingUp, ShoppingBag, Megaphone,
@@ -156,6 +157,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
 
         {/* Page content */}
         <main className="flex-1 overflow-y-auto">
+          <TrialBanner />
           {children}
         </main>
       </div>
