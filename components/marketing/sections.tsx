@@ -591,11 +591,24 @@ export function Footer() {
           {[
             { title: 'Product', links: ['Features', 'Pricing', 'Changelog', 'Roadmap'] },
             { title: 'Company', links: ['About', 'Blog', 'Careers', 'Press'] },
-            { title: 'Legal',   links: ['Privacy', 'Terms', 'Security', 'Cookies'] },
-          ].map(col => (
+{
+  title: 'Legal',
+  links: [
+    { label: 'Privacy', href: '/privacy' },
+    { label: 'Terms',   href: '/terms' },
+    { label: 'Security', href: '/privacy#security' },
+    { label: 'Cookies', href: '/privacy#cookies' },
+  ]
+},          ].map(col => (
             <div key={col.title}>
               <h4 className="text-white text-sm font-semibold mb-4">{col.title}</h4>
-              <ul className="space-y-2">{col.links.map(l => <li key={l}><a href="#" className="text-sm hover:text-white transition-colors">{l}</a></li>)}</ul>
+              <ul className="space-y-2">{col.links.map((l: any) => (
+  <li key={typeof l === 'string' ? l : l.label}>
+    <a href={typeof l === 'string' ? '#' : l.href} className="text-sm hover:text-white transition-colors">
+      {typeof l === 'string' ? l : l.label}
+    </a>
+  </li>
+))}
             </div>
           ))}
         </div>
