@@ -315,7 +315,7 @@ export default function DashboardPage() {
                     </p>
                   </div>
                   <div className="text-sm font-semibold text-white shrink-0">
-                    {formatCurrency(parseFloat(p.total_revenue))}
+                    {formatCurrency(parseFloat(p.total_revenue)) ?? ''}
                   </div>
                 </div>
               ))}
