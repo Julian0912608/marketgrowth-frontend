@@ -154,4 +154,10 @@ export default function RegisterPage() {
       </div>
     </div>
   );
+  <p className="text-xs text-slate-400 text-center mt-4">
+//     By creating an account you agree to our{' '}
+//     <Link href="/terms" className="text-indigo-600 hover:underline">Terms</Link>
+//     {' '}and{' '}
+//     <Link href="/privacy" className="text-indigo-600 hover:underline">Privacy Policy</Link>.
+//   </p>
 }
