@@ -225,7 +225,7 @@ export default function DashboardPage() {
             <div className="font-display text-2xl font-800 text-white mb-1">
               {stat.value === null
                 ? <span className="text-slate-600 animate-pulse">...</span>
-                : stat.value
+                : stat.value ?? ''
               }
             </div>
             {stat.change !== undefined && stat.value !== null && (
