@@ -1,20 +1,33 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { TrendingUp, ShoppingCart, Users, BarChart3, ArrowUpRight, ArrowDownRight } from 'lucide-react';
+import {
+  TrendingUp, ShoppingCart, Users, BarChart3,
+  ArrowUpRight, ArrowDownRight,
+} from 'lucide-react';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer
+  ResponsiveContainer,
 } from 'recharts';
 import { api } from '@/lib/api';
+import { ExportButton } from '@/components/dashboard/ExportButton';
 
 const PLATFORM_COLORS: Record<string, string> = {
-  shopify: '#10b981', bolcom: '#3b82f6', etsy: '#f59e0b',
-  woocommerce: '#8b5cf6', amazon: '#f97316', pinterest: '#f43f5e',
+  shopify:     '#10b981',
+  bolcom:      '#3b82f6',
+  etsy:        '#f59e0b',
+  woocommerce: '#8b5cf6',
+  amazon:      '#f97316',
+  pinterest:   '#f43f5e',
 };
+
 const PLATFORM_LABELS: Record<string, string> = {
-  shopify: 'Shopify', bolcom: 'Bol.com', etsy: 'Etsy',
-  woocommerce: 'WooCommerce', amazon: 'Amazon', pinterest: 'Pinterest',
+  shopify:     'Shopify',
+  bolcom:      'Bol.com',
+  etsy:        'Etsy',
+  woocommerce: 'WooCommerce',
+  amazon:      'Amazon',
+  pinterest:   'Pinterest',
 };
 
 function formatCurrency(val: number) {
@@ -49,12 +62,12 @@ function CustomTooltip({ active, payload, label }: any) {
 }
 
 export default function AnalyticsPage() {
-  const [period, setPeriod]           = useState<'7d' | '30d' | '90d'>('30d');
-  const [overview, setOverview]       = useState<any>(null);
-  const [daily, setDaily]             = useState<any[]>([]);
-  const [platforms, setPlatforms]     = useState<any[]>([]);
+  const [period,      setPeriod]      = useState<'7d' | '30d' | '90d'>('30d');
+  const [overview,    setOverview]    = useState<any>(null);
+  const [daily,       setDaily]       = useState<any[]>([]);
+  const [platforms,   setPlatforms]   = useState<any[]>([]);
   const [topProducts, setTopProducts] = useState<any[]>([]);
-  const [loading, setLoading]         = useState(true);
+  const [loading,     setLoading]     = useState(true);
 
   useEffect(() => {
     const load = async () => {
@@ -90,7 +103,6 @@ export default function AnalyticsPage() {
       byDate[date].orders  += parseInt(d.orders_count ?? 0, 10);
     });
 
-    // Genereer alle dagen in de geselecteerde periode
     const days = period === '7d' ? 7 : period === '90d' ? 90 : 30;
     const allDates: string[] = [];
     for (let i = days - 1; i >= 0; i--) {
@@ -147,18 +159,23 @@ export default function AnalyticsPage() {
           <h1 className="font-display text-2xl font-800 text-white mb-1">Sales Analytics</h1>
           <p className="text-slate-400 text-sm">All platforms combined</p>
         </div>
-        <div className="flex items-center gap-1 bg-slate-800/80 border border-slate-700/50 rounded-xl p-1">
-          {(['7d', '30d', '90d'] as const).map(p => (
-            <button
-              key={p}
-              onClick={() => setPeriod(p)}
-              className={`px-4 py-1.5 text-xs font-medium rounded-lg transition-all ${
-                period === p ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              {p === '7d' ? '7 days' : p === '30d' ? '30 days' : '90 days'}
-            </button>
-          ))}
+        <div className="flex items-center gap-3">
+          <ExportButton period={period} />
+          <div className="flex items-center gap-1 bg-slate-800/80 border border-slate-700/50 rounded-xl p-1">
+            {(['7d', '30d', '90d'] as const).map(p => (
+              <button
+                key={p}
+                onClick={() => setPeriod(p)}
+                className={`px-4 py-1.5 text-xs font-medium rounded-lg transition-all ${
+                  period === p
+                    ? 'bg-blue-600 text-white shadow-sm'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                {p === '7d' ? '7 days' : p === '30d' ? '30 days' : '90 days'}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -171,13 +188,19 @@ export default function AnalyticsPage() {
             </div>
             <div className="text-xs text-slate-400 mb-1">{card.label}</div>
             <div className="font-display text-xl font-800 text-white">
-              {loading ? <span className="animate-pulse text-slate-600">...</span> : card.value}
+              {loading
+                ? <span className="animate-pulse text-slate-600">...</span>
+                : card.value
+              }
             </div>
             {card.change !== undefined && !loading && (
               <div className={`flex items-center gap-1 text-xs mt-1 font-medium ${
                 card.change >= 0 ? 'text-emerald-400' : 'text-rose-400'
               }`}>
-                {card.change >= 0 ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
+                {card.change >= 0
+                  ? <ArrowUpRight className="w-3 h-3" />
+                  : <ArrowDownRight className="w-3 h-3" />
+                }
                 {Math.abs(card.change)}%
               </div>
             )}
@@ -216,11 +239,11 @@ export default function AnalyticsPage() {
                 interval={period === '7d' ? 0 : period === '30d' ? 4 : 9}
               />
               <YAxis
-                tickFormatter={v => `€${v >= 1000 ? (v / 1000).toFixed(1) + 'k' : v}`}
+                tickFormatter={v => `€${v >= 1000 ? (v / 1000).toFixed(0) + 'k' : v}`}
                 tick={{ fill: '#64748b', fontSize: 11 }}
                 axisLine={false}
                 tickLine={false}
-                width={55}
+                width={50}
               />
               <Tooltip content={<CustomTooltip />} />
               <Area
@@ -230,48 +253,48 @@ export default function AnalyticsPage() {
                 strokeWidth={2}
                 fill="url(#revenueGradient)"
                 dot={false}
-                activeDot={{ r: 4, fill: '#3b82f6', strokeWidth: 0 }}
+                activeDot={{ r: 4, fill: '#3b82f6' }}
               />
             </AreaChart>
           </ResponsiveContainer>
         )}
       </div>
 
-      {/* By platform + Top products */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* Platform breakdown + Top products */}
+      <div className="grid lg:grid-cols-2 gap-6">
 
-        {/* By platform */}
+        {/* Per platform */}
         <div className="bg-slate-800/50 border border-slate-700/50 rounded-2xl p-6">
-          <h2 className="font-display font-700 text-white mb-5">By platform</h2>
+          <h2 className="font-display font-700 text-white mb-4">Revenue by platform</h2>
           {loading ? (
             <div className="space-y-3">
-              {[1, 2].map(i => <div key={i} className="animate-pulse h-8 bg-slate-700/50 rounded-lg" />)}
+              {[1, 2, 3].map(i => (
+                <div key={i} className="h-10 bg-slate-700/40 rounded-lg animate-pulse" />
+              ))}
             </div>
           ) : platforms.length === 0 ? (
-            <p className="text-slate-500 text-sm">No data</p>
+            <p className="text-slate-500 text-sm">No platform data yet.</p>
           ) : (
-            <div className="space-y-4">
-              {platforms.map(p => {
-                const color = PLATFORM_COLORS[p.platform] ?? '#64748b';
-                const label = PLATFORM_LABELS[p.platform] ?? p.platform;
-                const share = parseFloat(p.revenue_share ?? 0);
+            <div className="space-y-3">
+              {platforms.map((p: any) => {
+                const revenue = parseFloat(p.revenue ?? 0);
+                const maxRev  = parseFloat(platforms[0]?.revenue ?? 1);
+                const pct     = maxRev > 0 ? (revenue / maxRev) * 100 : 0;
+                const color   = PLATFORM_COLORS[p.platform] ?? '#64748b';
+                const label   = PLATFORM_LABELS[p.platform] ?? p.platform;
                 return (
                   <div key={p.platform}>
-                    <div className="flex items-center justify-between mb-1.5">
-                      <div className="flex items-center gap-2">
-                        <div className="w-2.5 h-2.5 rounded-full" style={{ background: color }} />
-                        <span className="text-sm text-white font-medium">{label}</span>
-                      </div>
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-sm text-slate-300">{label}</span>
                       <div className="flex items-center gap-3 text-xs text-slate-400">
-                        <span>{Number(p.orders_count).toLocaleString('nl-NL')} orders</span>
-                        <span className="text-white font-medium">{formatCurrency(parseFloat(p.revenue))}</span>
-                        <span className="text-slate-500">{share}%</span>
+                        <span>{p.orders_count} orders</span>
+                        <span className="font-semibold text-white">{formatCurrency(revenue)}</span>
                       </div>
                     </div>
-                    <div className="h-1.5 bg-slate-700 rounded-full overflow-hidden">
+                    <div className="h-1.5 bg-slate-700/50 rounded-full overflow-hidden">
                       <div
-                        className="h-full rounded-full transition-all duration-700"
-                        style={{ width: `${share}%`, background: color }}
+                        className="h-full rounded-full transition-all duration-500"
+                        style={{ width: `${pct}%`, background: color }}
                       />
                     </div>
                   </div>
@@ -283,35 +306,33 @@ export default function AnalyticsPage() {
 
         {/* Top products */}
         <div className="bg-slate-800/50 border border-slate-700/50 rounded-2xl p-6">
-          <h2 className="font-display font-700 text-white mb-5">Top products</h2>
+          <h2 className="font-display font-700 text-white mb-4">Top products</h2>
           {loading ? (
             <div className="space-y-3">
-              {[1, 2, 3].map(i => <div key={i} className="animate-pulse h-10 bg-slate-700/50 rounded-lg" />)}
+              {[1, 2, 3, 4].map(i => (
+                <div key={i} className="h-10 bg-slate-700/40 rounded-lg animate-pulse" />
+              ))}
             </div>
           ) : topProducts.length === 0 ? (
-            <p className="text-slate-500 text-sm">No data</p>
+            <p className="text-slate-500 text-sm">No product data yet.</p>
           ) : (
-            <div className="space-y-3">
-              {topProducts.map((p, i) => {
-                const color = PLATFORM_COLORS[p.platform] ?? '#64748b';
-                return (
-                  <div key={i} className="flex items-center gap-3">
-                    <div className="w-6 h-6 rounded-full bg-slate-700 flex items-center justify-center text-xs text-slate-400 font-medium shrink-0">
-                      {i + 1}
-                    </div>
-                    <div className="flex-1 min-w-0">
+            <div className="space-y-2">
+              {topProducts.slice(0, 8).map((p: any, i: number) => (
+                <div key={i} className="flex items-center justify-between py-2 border-b border-slate-700/30 last:border-0">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <span className="text-slate-600 text-xs w-4 flex-shrink-0">{i + 1}</span>
+                    <div className="min-w-0">
                       <p className="text-sm text-white truncate">{p.title}</p>
                       <p className="text-xs text-slate-500">
-                        {Number(p.total_sold).toLocaleString('nl-NL')} sold ·{' '}
-                        <span style={{ color }}>{PLATFORM_LABELS[p.platform] ?? p.platform}</span>
+                        {PLATFORM_LABELS[p.platform] ?? p.platform} · {p.total_sold} sold
                       </p>
                     </div>
-                    <div className="text-sm font-semibold text-white shrink-0">
-                      {formatCurrency(parseFloat(p.total_revenue))}
-                    </div>
                   </div>
-                );
-              })}
+                  <div className="text-sm font-semibold text-white flex-shrink-0 ml-3">
+                    {formatCurrency(parseFloat(p.total_revenue ?? 0))}
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </div>
