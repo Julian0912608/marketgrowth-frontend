@@ -83,8 +83,8 @@ const adminApi = {
     'Content-Type': 'application/json',
     'x-admin-token': process.env.NEXT_PUBLIC_ADMIN_SECRET || '',
   }),
-  base: process.env.NEXT_PUBLIC_API_URL || 'https://marketgrowth-production.up.railway.app',
-
+base: (process.env.NEXT_PUBLIC_API_URL || 'https://marketgrowth-production.up.railway.app') + '/api',
+  
   async get<T>(path: string): Promise<T> {
     const res = await fetch(this.base + path, { headers: this.headers() });
     if (!res.ok) throw new Error(await res.text());
