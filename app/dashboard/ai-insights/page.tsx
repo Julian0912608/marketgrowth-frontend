@@ -38,23 +38,25 @@ const PRIORITY_CONFIG = {
 };
 
 const CHANNEL_COLORS: Record<string, string> = {
-  bolcom:   'bg-blue-500/20 text-blue-300',
-  shopify:  'bg-emerald-500/20 text-emerald-300',
-  amazon:   'bg-orange-500/20 text-orange-300',
-  etsy:     'bg-amber-500/20 text-amber-300',
-  meta:     'bg-blue-600/20 text-blue-300',
-  google:   'bg-rose-500/20 text-rose-300',
-  algemeen: 'bg-slate-700 text-slate-400',
+  bolcom:     'bg-blue-500/20 text-blue-300',
+  bolcom_ads: 'bg-blue-500/20 text-blue-300',  // ← toevoegen
+  shopify:    'bg-emerald-500/20 text-emerald-300',
+  amazon:     'bg-orange-500/20 text-orange-300',
+  etsy:       'bg-amber-500/20 text-amber-300',
+  meta:       'bg-blue-600/20 text-blue-300',
+  google:     'bg-rose-500/20 text-rose-300',
+  algemeen:   'bg-slate-700 text-slate-400',
 };
 
 const CHANNEL_LABELS: Record<string, string> = {
-  bolcom:   'Bol.com',
-  shopify:  'Shopify',
-  amazon:   'Amazon',
-  etsy:     'Etsy',
-  meta:     'Meta Ads',
-  google:   'Google Ads',
-  algemeen: 'Algemeen',
+  bolcom:     'Bol.com',
+  bolcom_ads: 'Bol.com Ads',  // ← toevoegen
+  shopify:    'Shopify',
+  amazon:     'Amazon',
+  etsy:       'Etsy',
+  meta:       'Meta Ads',
+  google:     'Google Ads',
+  algemeen:   'Algemeen',
 };
 
 export default function AiInsightsPage() {
