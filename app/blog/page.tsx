@@ -119,17 +119,17 @@ export default function BlogPage() {
             ))}
           </div>
 
-          {/* Newsletter CTA */}
-          <div className="rounded-2xl bg-gradient-to-br from-brand-600 to-brand-800 p-8 text-center">
-            <h3 className="font-display text-2xl font-700 text-white mb-2">Get early access to MarketGrow</h3>
-            <p className="text-brand-100 mb-6">Join the waitlist and get your first month free when we launch.</p>
-            <Link
-              href="/#waitlist"
-              className="inline-flex items-center gap-2 bg-white text-brand-700 font-semibold px-6 py-3 rounded-xl hover:bg-brand-50 transition-colors"
-            >
-              Join the waitlist <ArrowRight className="w-4 h-4" />
-            </Link>
-          </div>
+          {/* Start free trial CTA */}
+<div className="rounded-2xl bg-gradient-to-br from-brand-600 to-brand-800 p-8 text-center">
+  <h3 className="font-display text-2xl font-700 text-white mb-2">Start growing smarter today</h3>
+  <p className="text-brand-100 mb-6">Connect your stores and get AI-powered actions every morning. 14 days free.</p>
+  <Link
+    href="/register"
+    className="inline-flex items-center gap-2 bg-white text-brand-700 font-semibold px-6 py-3 rounded-xl hover:bg-brand-50 transition-colors"
+  >
+    Start free trial <ArrowRight className="w-4 h-4" />
+  </Link>
+</div>
         </div>
       </section>
 
