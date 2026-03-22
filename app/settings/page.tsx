@@ -2,12 +2,13 @@
 
 import { useState, useEffect } from 'react';
 import {
-  User, CreditCard, Bell, Shield, Zap,
-  Check, Loader2, ArrowUpRight,
-  Download, X, CheckCircle,
+  User, CreditCard, Bell, Shield,
+  Check, Loader2, X, CheckCircle,
+  Download, Trash2, AlertTriangle,
 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/lib/store';
+import { useRouter } from 'next/navigation';
 
 interface BillingOverview {
   planSlug:          string;
@@ -28,30 +29,31 @@ interface BillingOverview {
 const PLANS = [
   {
     slug: 'starter', name: 'Starter', price: 20,
-    features: ['1 webshop', '100 AI credits / maand', 'Sales dashboard', 'Order & omzet analyse', 'Wekelijks AI rapport', 'E-mail support'],
+    features: ['1 store', '100 AI credits / month', 'Sales dashboard', 'Order analytics', 'Email support'],
   },
   {
     slug: 'growth', name: 'Growth', price: 49, popular: true,
-    features: ['3 webshops', '2.000 AI credits / maand', 'Alles van Starter', 'AI product aanbevelingen', 'Advertentie analyse', 'Klant LTV prognose', 'Dagelijkse AI inzichten', 'Rapportage export', 'Prioriteit support'],
+    features: ['3 stores', '2,000 AI credits / month', 'Everything in Starter', 'AI recommendations', 'Ad analytics', 'Customer LTV', 'Priority support'],
   },
   {
     slug: 'scale', name: 'Scale', price: 150,
-    features: ['Onbeperkte webshops', 'Onbeperkte AI credits', 'Alles van Growth', 'AI advertentie optimalisatie', 'White-label dashboard', 'Team accounts', 'API toegang', 'Dedicated account manager'],
+    features: ['Unlimited stores', 'Unlimited AI credits', 'Everything in Growth', 'AI ad optimisation', 'White-label dashboard', 'Team accounts', 'API access'],
   },
 ];
 
 const TABS = [
-  { id: 'profile',       label: 'Profiel',      icon: User },
-  { id: 'billing',       label: 'Abonnement',   icon: CreditCard },
-  { id: 'security',      label: 'Beveiliging',  icon: Shield },
-  { id: 'notifications', label: 'Notificaties', icon: Bell },
+  { id: 'profile',       label: 'Profile',       icon: User },
+  { id: 'billing',       label: 'Billing',        icon: CreditCard },
+  { id: 'security',      label: 'Security',       icon: Shield },
+  { id: 'notifications', label: 'Notifications',  icon: Bell },
 ];
 
 const card  = 'bg-slate-800/50 border border-slate-700/50 rounded-2xl p-6';
 const input = 'w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2.5 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:ring-1 focus:ring-brand-500 transition-colors';
 
 export default function SettingsPage() {
-  const { user, updateUser } = useAuthStore();
+  const { user, updateUser, clearAuth } = useAuthStore();
+  const router = useRouter();
 
   const [activeTab,         setActiveTab]         = useState('profile');
   const [billing,           setBilling]           = useState<BillingOverview | null>(null);
@@ -59,31 +61,20 @@ export default function SettingsPage() {
   const [upgradeLoading,    setUpgradeLoading]    = useState<string | null>(null);
   const [cancelLoading,     setCancelLoading]     = useState(false);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteLoading,     setDeleteLoading]     = useState(false);
   const [toast,             setToast]             = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
 
-  const [firstName,      setFirstName]      = useState('');
-  const [lastName,       setLastName]       = useState('');
+  // Profile
+  const [firstName, setFirstName] = useState(user?.firstName ?? '');
+  const [lastName,  setLastName]  = useState(user?.lastName  ?? '');
   const [profileLoading, setProfileLoading] = useState(false);
 
+  // Security
   const [currentPw, setCurrentPw] = useState('');
   const [newPw,     setNewPw]     = useState('');
   const [confirmPw, setConfirmPw] = useState('');
   const [pwLoading, setPwLoading] = useState(false);
-
-  const [notifWeekly,  setNotifWeekly]  = useState(true);
-  const [notifAlerts,  setNotifAlerts]  = useState(true);
-  const [notifProduct, setNotifProduct] = useState(false);
-
-  useEffect(() => {
-    if (user) {
-      setFirstName(user.firstName ?? '');
-      setLastName(user.lastName   ?? '');
-    }
-  }, [user]);
-
-  useEffect(() => {
-    if (activeTab === 'billing' && !billing) fetchBilling();
-  }, [activeTab]);
 
   const showToast = (type: 'success' | 'error', msg: string) => {
     setToast({ type, msg });
@@ -95,41 +86,42 @@ export default function SettingsPage() {
     try {
       const res = await api.get('/billing/overview');
       setBilling(res.data);
-    } catch {
-      // nog geen abonnement
-    } finally {
-      setBillingLoading(false);
-    }
+    } catch {}
+    setBillingLoading(false);
   };
 
-  const handleSaveProfile = async () => {
-    if (!firstName.trim() || !lastName.trim()) return;
+  useEffect(() => {
+    if (activeTab === 'billing') fetchBilling();
+  }, [activeTab]);
+
+  useEffect(() => {
+    setFirstName(user?.firstName ?? '');
+    setLastName(user?.lastName   ?? '');
+  }, [user]);
+
+  const handleProfileSave = async () => {
     setProfileLoading(true);
     try {
       const res = await api.patch('/auth/profile', { firstName, lastName });
       updateUser({ firstName: res.data.firstName, lastName: res.data.lastName });
-      setFirstName(res.data.firstName ?? firstName);
-      setLastName(res.data.lastName   ?? lastName);
-      showToast('success', 'Profiel opgeslagen!');
-    } catch (e: any) {
-      showToast('error', e.response?.data?.message ?? 'Er ging iets mis.');
+      showToast('success', 'Profile updated!');
+    } catch {
+      showToast('error', 'Something went wrong.');
     } finally {
       setProfileLoading(false);
     }
   };
 
-  const handleChangePassword = async () => {
-    if (newPw.length < 8)    { showToast('error', 'Nieuw wachtwoord moet minimaal 8 tekens zijn.'); return; }
-    if (newPw !== confirmPw) { showToast('error', 'Wachtwoorden komen niet overeen.'); return; }
+  const handlePasswordChange = async () => {
+    if (newPw.length < 8) { showToast('error', 'New password must be at least 8 characters.'); return; }
+    if (newPw !== confirmPw) { showToast('error', 'Passwords do not match.'); return; }
     setPwLoading(true);
     try {
       await api.post('/auth/change-password', { currentPassword: currentPw, newPassword: newPw });
-      setCurrentPw('');
-      setNewPw('');
-      setConfirmPw('');
-      showToast('success', 'Wachtwoord succesvol gewijzigd!');
+      setCurrentPw(''); setNewPw(''); setConfirmPw('');
+      showToast('success', 'Password updated!');
     } catch (e: any) {
-      showToast('error', e.response?.data?.message ?? 'Er ging iets mis.');
+      showToast('error', e.response?.data?.message ?? 'Something went wrong.');
     } finally {
       setPwLoading(false);
     }
@@ -144,10 +136,10 @@ export default function SettingsPage() {
       } else {
         await api.post('/billing/change-plan', { planSlug });
         await fetchBilling();
-        showToast('success', `Plan gewijzigd naar ${planSlug}!`);
+        showToast('success', `Plan changed to ${planSlug}!`);
       }
     } catch (e: any) {
-      showToast('error', e.response?.data?.message ?? 'Er ging iets mis.');
+      showToast('error', e.response?.data?.message ?? 'Something went wrong.');
     } finally {
       setUpgradeLoading(null);
     }
@@ -156,14 +148,28 @@ export default function SettingsPage() {
   const handleCancel = async () => {
     setCancelLoading(true);
     try {
-      await api.post('/billing/cancel');
-      await fetchBilling();
-      setShowCancelConfirm(false);
-      showToast('success', 'Abonnement opgezegd. Toegang loopt door tot einde periode.');
+      // Redirect naar Stripe portal voor cancellation
+      const res = await api.post('/billing/portal');
+      window.location.href = res.data.url;
     } catch (e: any) {
-      showToast('error', e.response?.data?.message ?? 'Er ging iets mis.');
+      showToast('error', e.response?.data?.message ?? 'Something went wrong.');
     } finally {
       setCancelLoading(false);
+      setShowCancelConfirm(false);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    setDeleteLoading(true);
+    try {
+      await api.delete('/auth/account');
+      clearAuth();
+      router.push('/');
+    } catch (e: any) {
+      showToast('error', e.response?.data?.message ?? 'Something went wrong. Contact hello@marketgrow.ai to delete your account.');
+      setShowDeleteConfirm(false);
+    } finally {
+      setDeleteLoading(false);
     }
   };
 
@@ -180,17 +186,14 @@ export default function SettingsPage() {
             ? 'bg-emerald-500/20 border border-emerald-500/30 text-emerald-300'
             : 'bg-rose-500/20 border border-rose-500/30 text-rose-300'
         }`}>
-          {toast.type === 'success'
-            ? <CheckCircle className="w-4 h-4" />
-            : <X className="w-4 h-4" />
-          }
+          {toast.type === 'success' ? <CheckCircle className="w-4 h-4" /> : <X className="w-4 h-4" />}
           {toast.msg}
         </div>
       )}
 
       <div className="mb-8">
-        <h1 className="font-display text-2xl font-800 text-white mb-1">Instellingen</h1>
-        <p className="text-slate-400 text-sm">Beheer je account en abonnement</p>
+        <h1 className="font-display text-2xl font-800 text-white mb-1">Settings</h1>
+        <p className="text-slate-400 text-sm">Manage your account and subscription</p>
       </div>
 
       <div className="flex gap-1 mb-8 bg-slate-800/50 rounded-xl p-1 w-fit">
@@ -210,66 +213,38 @@ export default function SettingsPage() {
         ))}
       </div>
 
+      {/* Profile tab */}
       {activeTab === 'profile' && (
         <div className={card}>
-          <h2 className="font-display font-700 text-white mb-6">Persoonlijke gegevens</h2>
-
-          <div className="flex items-center gap-4 mb-6">
-            <div className="w-14 h-14 rounded-2xl bg-brand-600 flex items-center justify-center font-display font-700 text-white text-lg">
-              {firstName?.[0]?.toUpperCase() ?? '?'}
-            </div>
-            <div>
-              <div className="font-semibold text-white">{firstName} {lastName}</div>
-              <div className="text-sm text-slate-400">{user?.email}</div>
-              <div className="text-xs text-slate-500 capitalize mt-0.5 flex items-center gap-1">
-                <Zap className="w-3 h-3" />
-                {currentPlan} plan
+          <h2 className="font-display font-700 text-white mb-6">Profile</h2>
+          <div className="space-y-4 max-w-md">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-medium text-slate-400 mb-1.5">First name</label>
+                <input value={firstName} onChange={e => setFirstName(e.target.value)} className={input} />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-400 mb-1.5">Last name</label>
+                <input value={lastName} onChange={e => setLastName(e.target.value)} className={input} />
               </div>
             </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4 mb-4">
             <div>
-              <label className="block text-xs font-medium text-slate-400 mb-1.5">Voornaam</label>
-              <input
-                value={firstName}
-                onChange={e => setFirstName(e.target.value)}
-                className={input}
-                placeholder="Voornaam"
-              />
+              <label className="block text-xs font-medium text-slate-400 mb-1.5">Email</label>
+              <input value={user?.email ?? ''} disabled className={`${input} opacity-50 cursor-not-allowed`} />
             </div>
-            <div>
-              <label className="block text-xs font-medium text-slate-400 mb-1.5">Achternaam</label>
-              <input
-                value={lastName}
-                onChange={e => setLastName(e.target.value)}
-                className={input}
-                placeholder="Achternaam"
-              />
-            </div>
+            <button
+              onClick={handleProfileSave}
+              disabled={profileLoading}
+              className="flex items-center gap-2 bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
+            >
+              {profileLoading && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+              {profileLoading ? 'Saving...' : 'Save changes'}
+            </button>
           </div>
-
-          <div className="mb-6">
-            <label className="block text-xs font-medium text-slate-400 mb-1.5">E-mailadres</label>
-            <input
-              value={user?.email ?? ''}
-              disabled
-              className="w-full bg-slate-900/50 border border-slate-700/50 rounded-lg px-3 py-2.5 text-sm text-slate-500 cursor-not-allowed"
-            />
-            <p className="text-xs text-slate-600 mt-1">E-mailadres kan niet worden gewijzigd.</p>
-          </div>
-
-          <button
-            onClick={handleSaveProfile}
-            disabled={profileLoading || !firstName.trim() || !lastName.trim()}
-            className="bg-brand-600 hover:bg-brand-700 disabled:opacity-50 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition-all flex items-center gap-2"
-          >
-            {profileLoading && <Loader2 className="w-4 h-4 animate-spin" />}
-            {profileLoading ? 'Opslaan...' : 'Opslaan'}
-          </button>
         </div>
       )}
 
+      {/* Billing tab */}
       {activeTab === 'billing' && (
         <div className="space-y-6">
           {billingLoading ? (
@@ -280,9 +255,9 @@ export default function SettingsPage() {
             <div className={card}>
               <div className="flex items-start justify-between mb-4">
                 <div>
-                  <h2 className="font-display font-700 text-white">Huidig abonnement</h2>
+                  <h2 className="font-display font-700 text-white">Current plan</h2>
                   <p className="text-sm text-slate-400 mt-0.5">
-                    {billing.planName} — €{PLANS.find(p => p.slug === billing.planSlug)?.price ?? '?'}/maand
+                    {billing.planName} — €{PLANS.find(p => p.slug === billing.planSlug)?.price ?? '?'}/month
                   </p>
                 </div>
                 <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${
@@ -290,32 +265,32 @@ export default function SettingsPage() {
                   isCancelled ? 'bg-rose-500/20 text-rose-400'     :
                                 'bg-emerald-500/20 text-emerald-400'
                 }`}>
-                  {isTrialing ? 'Proefperiode' : isCancelled ? 'Opgezegd' : 'Actief'}
+                  {isTrialing ? 'Trial' : isCancelled ? 'Cancelled' : 'Active'}
                 </span>
               </div>
 
               {billing.currentPeriodEnd && (
                 <p className="text-xs text-slate-500 mb-4">
-                  {isCancelled ? 'Toegang tot' : 'Volgende facturatie op'}{' '}
-                  {new Date(billing.currentPeriodEnd).toLocaleDateString('nl-NL', {
+                  {isCancelled ? 'Access until' : 'Next billing on'}{' '}
+                  {new Date(billing.currentPeriodEnd).toLocaleDateString('en-GB', {
                     day: 'numeric', month: 'long', year: 'numeric',
                   })}
                 </p>
               )}
 
-              {!isCancelled && !isTrialing && (
+              {!isCancelled && (
                 <button
                   onClick={() => setShowCancelConfirm(true)}
                   className="text-xs text-slate-500 hover:text-rose-400 transition-colors"
                 >
-                  Abonnement opzeggen
+                  Cancel subscription
                 </button>
               )}
 
               {showCancelConfirm && (
                 <div className="mt-4 p-4 bg-rose-500/10 border border-rose-500/20 rounded-xl">
                   <p className="text-sm text-rose-300 mb-3">
-                    Weet je zeker dat je wilt opzeggen? Je behoudt toegang tot het einde van je betaalperiode.
+                    You'll be redirected to the billing portal to cancel. You keep access until the end of your current period.
                   </p>
                   <div className="flex gap-2">
                     <button
@@ -324,23 +299,54 @@ export default function SettingsPage() {
                       className="bg-rose-500 hover:bg-rose-600 text-white text-xs font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1"
                     >
                       {cancelLoading && <Loader2 className="w-3 h-3 animate-spin" />}
-                      Ja, opzeggen
+                      Go to billing portal
                     </button>
                     <button
                       onClick={() => setShowCancelConfirm(false)}
                       className="text-slate-400 hover:text-white text-xs px-3 py-1.5"
                     >
-                      Annuleren
+                      Keep subscription
                     </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Invoices */}
+              {billing.invoices.length > 0 && (
+                <div className="mt-6 pt-6 border-t border-slate-700/50">
+                  <h3 className="text-sm font-semibold text-slate-300 mb-3">Invoices</h3>
+                  <div className="space-y-2">
+                    {billing.invoices.map(inv => (
+                      <div key={inv.id} className="flex items-center justify-between py-2 border-b border-slate-700/30 last:border-0">
+                        <div>
+                          <p className="text-sm text-white">
+                            {new Date(inv.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
+                          </p>
+                          <p className="text-xs text-slate-500 capitalize">{inv.status}</p>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <span className="text-sm font-semibold text-white">
+                            €{inv.amount.toFixed(2)}
+                          </span>
+                          {inv.downloadUrl && (
+                            <a href={inv.downloadUrl} target="_blank" rel="noopener noreferrer"
+                              className="w-7 h-7 rounded-lg bg-slate-700/50 hover:bg-slate-700 flex items-center justify-center transition-colors">
+                              <Download className="w-3.5 h-3.5 text-slate-400" />
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
               )}
             </div>
           ) : null}
 
+          {/* Plan picker */}
           <div>
             <h2 className="font-display font-700 text-white mb-4">
-              {billing ? 'Pakket wijzigen' : 'Kies een pakket'}
+              {billing ? 'Change plan' : 'Choose a plan'}
             </h2>
             <div className="grid md:grid-cols-3 gap-4">
               {PLANS.map(plan => {
@@ -352,14 +358,14 @@ export default function SettingsPage() {
                   >
                     {(plan as any).popular && (
                       <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-brand-600 text-white text-xs font-semibold px-3 py-1 rounded-full whitespace-nowrap">
-                        Meest gekozen
+                        Most popular
                       </div>
                     )}
                     <div className="mb-4">
                       <div className="font-display font-700 text-white text-lg">{plan.name}</div>
                       <div className="text-2xl font-display font-800 text-white mt-1">
                         €{plan.price}
-                        <span className="text-sm font-normal text-slate-400">/maand</span>
+                        <span className="text-sm font-normal text-slate-400">/month</span>
                       </div>
                     </div>
                     <ul className="space-y-2 mb-6">
@@ -375,151 +381,126 @@ export default function SettingsPage() {
                       disabled={isCurrent || upgradeLoading !== null}
                       className={`w-full py-2 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2 ${
                         isCurrent
-                          ? 'bg-slate-700 text-slate-400 cursor-default'
+                          ? 'bg-slate-700/50 text-slate-500 cursor-default'
                           : 'bg-brand-600 hover:bg-brand-700 text-white'
                       }`}
                     >
-                      {upgradeLoading === plan.slug && <Loader2 className="w-4 h-4 animate-spin" />}
-                      {isCurrent ? 'Huidig pakket' : 'Kiezen'}
-                      {!isCurrent && <ArrowUpRight className="w-3.5 h-3.5" />}
+                      {upgradeLoading === plan.slug && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                      {isCurrent ? 'Current plan' : `Switch to ${plan.name}`}
                     </button>
                   </div>
                 );
               })}
             </div>
           </div>
-
-          {billing?.invoices && billing.invoices.length > 0 && (
-            <div className={card}>
-              <h2 className="font-display font-700 text-white mb-4">Factuurhistorie</h2>
-              <div className="space-y-2">
-                {billing.invoices.map(inv => (
-                  <div
-                    key={inv.id}
-                    className="flex items-center justify-between py-2 border-b border-slate-700/50 last:border-0"
-                  >
-                    <div>
-                      <div className="text-sm text-white">
-                        {new Date(inv.date).toLocaleDateString('nl-NL', {
-                          day: 'numeric', month: 'long', year: 'numeric',
-                        })}
-                      </div>
-                      <div className="text-xs text-slate-500">
-                        €{Number(inv.amount).toFixed(2)} — {inv.status}
-                      </div>
-                    </div>
-                    {inv.downloadUrl && (
-                      <a
-                        href={inv.downloadUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-1 text-xs text-slate-400 hover:text-white transition-colors"
-                      >
-                        <Download className="w-3.5 h-3.5" />
-                        PDF
-                      </a>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
       )}
 
+      {/* Security tab */}
       {activeTab === 'security' && (
-        <div className={card}>
-          <h2 className="font-display font-700 text-white mb-6">Wachtwoord wijzigen</h2>
-          <div className="space-y-4 max-w-sm">
-            <div>
-              <label className="block text-xs font-medium text-slate-400 mb-1.5">Huidig wachtwoord</label>
-              <input
-                type="password"
-                value={currentPw}
-                onChange={e => setCurrentPw(e.target.value)}
-                className={input}
-                placeholder="••••••••"
-              />
+        <div className="space-y-6">
+          <div className={card}>
+            <h2 className="font-display font-700 text-white mb-6">Change password</h2>
+            <div className="space-y-4 max-w-md">
+              <div>
+                <label className="block text-xs font-medium text-slate-400 mb-1.5">Current password</label>
+                <input type="password" value={currentPw} onChange={e => setCurrentPw(e.target.value)} className={input} />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-400 mb-1.5">New password</label>
+                <input type="password" value={newPw} onChange={e => setNewPw(e.target.value)} className={input} />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-400 mb-1.5">Confirm new password</label>
+                <input type="password" value={confirmPw} onChange={e => setConfirmPw(e.target.value)} className={input} />
+              </div>
+              <button
+                onClick={handlePasswordChange}
+                disabled={pwLoading || !currentPw || !newPw || !confirmPw}
+                className="flex items-center gap-2 bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
+              >
+                {pwLoading && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                {pwLoading ? 'Updating...' : 'Update password'}
+              </button>
             </div>
-            <div>
-              <label className="block text-xs font-medium text-slate-400 mb-1.5">Nieuw wachtwoord</label>
-              <input
-                type="password"
-                value={newPw}
-                onChange={e => setNewPw(e.target.value)}
-                className={input}
-                placeholder="Minimaal 8 tekens"
-              />
+          </div>
+
+          {/* Delete account */}
+          <div className={`${card} border-rose-500/20`}>
+            <div className="flex items-start gap-3 mb-4">
+              <div className="w-8 h-8 rounded-lg bg-rose-500/20 flex items-center justify-center flex-shrink-0">
+                <AlertTriangle className="w-4 h-4 text-rose-400" />
+              </div>
+              <div>
+                <h2 className="font-display font-700 text-white">Delete account</h2>
+                <p className="text-sm text-slate-400 mt-1">
+                  Permanently delete your account and all associated data. This action cannot be undone.
+                </p>
+              </div>
             </div>
-            <div>
-              <label className="block text-xs font-medium text-slate-400 mb-1.5">Bevestig nieuw wachtwoord</label>
-              <input
-                type="password"
-                value={confirmPw}
-                onChange={e => setConfirmPw(e.target.value)}
-                className={input}
-                placeholder="••••••••"
-              />
-            </div>
-            {newPw.length > 0 && confirmPw.length > 0 && newPw !== confirmPw && (
-              <p className="text-xs text-rose-400">Wachtwoorden komen niet overeen.</p>
+
+            {!showDeleteConfirm ? (
+              <button
+                onClick={() => setShowDeleteConfirm(true)}
+                className="text-xs text-rose-400 hover:text-rose-300 border border-rose-500/30 hover:border-rose-500/50 px-3 py-1.5 rounded-lg transition-colors"
+              >
+                Delete my account
+              </button>
+            ) : (
+              <div className="p-4 bg-rose-500/10 border border-rose-500/20 rounded-xl">
+                <p className="text-sm text-rose-300 mb-3 font-medium">
+                  Are you absolutely sure? All your data, integrations and history will be permanently deleted.
+                </p>
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleDeleteAccount}
+                    disabled={deleteLoading}
+                    className="bg-rose-500 hover:bg-rose-600 text-white text-xs font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1"
+                  >
+                    {deleteLoading && <Loader2 className="w-3 h-3 animate-spin" />}
+                    <Trash2 className="w-3 h-3" />
+                    Yes, delete everything
+                  </button>
+                  <button
+                    onClick={() => setShowDeleteConfirm(false)}
+                    className="text-slate-400 hover:text-white text-xs px-3 py-1.5"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
             )}
-            <button
-              onClick={handleChangePassword}
-              disabled={pwLoading || !currentPw || !newPw || !confirmPw || newPw !== confirmPw}
-              className="bg-brand-600 hover:bg-brand-700 disabled:opacity-50 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition-all flex items-center gap-2"
-            >
-              {pwLoading && <Loader2 className="w-4 h-4 animate-spin" />}
-              {pwLoading ? 'Wijzigen...' : 'Wachtwoord wijzigen'}
-            </button>
           </div>
         </div>
       )}
 
+      {/* Notifications tab */}
       {activeTab === 'notifications' && (
         <div className={card}>
-          <h2 className="font-display font-700 text-white mb-6">E-mailnotificaties</h2>
-          <div className="space-y-1">
+          <h2 className="font-display font-700 text-white mb-6">Notifications</h2>
+          <div className="space-y-4 max-w-md">
             {[
-              { key: 'weekly',  label: 'Wekelijks AI rapport',  desc: 'Elke maandag een samenvatting van je prestaties', value: notifWeekly,  setter: setNotifWeekly },
-              { key: 'alerts',  label: 'Slimme alerts',         desc: 'Meldingen bij ongewone veranderingen in je data',  value: notifAlerts,  setter: setNotifAlerts },
-              { key: 'product', label: 'Productupdates',        desc: 'Nieuws over nieuwe functies en verbeteringen',     value: notifProduct, setter: setNotifProduct },
+              { label: 'Daily AI briefing', desc: 'Receive your daily AI actions every morning at 7:00', default: true },
+              { label: 'Weekly report', desc: 'Monday morning overview of last week\'s performance', default: true },
+              { label: 'Trial reminders', desc: 'Reminders before your trial expires', default: true },
+              { label: 'Sync alerts', desc: 'Notifications when a store sync fails', default: false },
             ].map(item => (
-              <div
-                key={item.key}
-                className="flex items-center justify-between py-4 border-b border-slate-700/50 last:border-0"
-              >
+              <div key={item.label} className="flex items-start justify-between gap-4 py-3 border-b border-slate-700/30 last:border-0">
                 <div>
-                  <div className="text-sm font-medium text-white">{item.label}</div>
-                  <div className="text-xs text-slate-500 mt-0.5">{item.desc}</div>
+                  <p className="text-sm font-medium text-white">{item.label}</p>
+                  <p className="text-xs text-slate-500 mt-0.5">{item.desc}</p>
                 </div>
-                <button
-                  onClick={() => item.setter(!item.value)}
-                  role="switch"
-                  aria-checked={item.value}
-                  className={`relative w-10 rounded-full transition-colors flex-shrink-0 ${
-                    item.value ? 'bg-brand-600' : 'bg-slate-700'
-                  }`}
-                  style={{ height: '22px' }}
-                >
-                  <span
-                    className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${
-                      item.value ? 'translate-x-5' : 'translate-x-0.5'
-                    }`}
-                  />
-                </button>
+                <div className={`w-10 h-5 rounded-full flex-shrink-0 mt-0.5 ${item.default ? 'bg-brand-600' : 'bg-slate-700'} flex items-center ${item.default ? 'justify-end pr-0.5' : 'justify-start pl-0.5'}`}>
+                  <div className="w-4 h-4 bg-white rounded-full" />
+                </div>
               </div>
             ))}
+            <p className="text-xs text-slate-500 pt-2">
+              To manage notification preferences in detail, contact <a href="mailto:hello@marketgrow.ai" className="text-brand-400 hover:underline">hello@marketgrow.ai</a>
+            </p>
           </div>
-          <button
-            onClick={() => showToast('success', 'Notificatie-instellingen opgeslagen!')}
-            className="mt-6 bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition-all"
-          >
-            Opslaan
-          </button>
         </div>
       )}
-
     </div>
   );
 }
