@@ -516,24 +516,30 @@ export function FAQ() {
 
 // ── CTA ───────────────────────────────────────────────────────
 export function CTA() {
-  const [email, setEmail]   = useState('');
-  const [status, setStatus] = useState<'idle' | 'loading' | 'success'>('idle');
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!email) return;
-    setStatus('loading');
-    try {
-      const res = await fetch('/api/waitlist', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
-      });
-      if (!res.ok) throw new Error();
-    } catch {}
-    setStatus('success');
-    setEmail('');
-  }
+  return (
+    <section id="cta" className="py-24 bg-brand-600">
+      <div className="max-w-xl mx-auto px-6 text-center">
+        <h2 className="font-display text-4xl sm:text-5xl font-800 text-white mb-4 text-balance">
+          Ready to grow smarter?
+        </h2>
+        <p className="text-brand-100 text-lg mb-10">
+          Connect your stores, get AI-powered actions every day, and stop guessing.
+          14 days free — no credit card required.
+        </p>
+ 
+        <Link
+          href="/register"
+          className="group inline-flex items-center gap-2 bg-white text-brand-600 hover:bg-brand-50 font-semibold px-8 py-4 rounded-xl transition-all shadow-lg text-sm"
+        >
+          Start your free trial
+          <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+        </Link>
+ 
+        <p className="text-brand-200 text-sm mt-4">No credit card · Cancel anytime · 14-day free trial</p>
+      </div>
+    </section>
+  );
+}
 
   return (
     <section id="waitlist" className="py-24 bg-brand-600">
