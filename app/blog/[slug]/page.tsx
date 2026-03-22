@@ -173,16 +173,16 @@ function renderBlock(block: ContentBlock, i: number) {
           </table>
         </div>
       );
-    case 'cta':
-      return (
-        <div key={i} className="my-8 rounded-2xl bg-gradient-to-br from-brand-600 to-brand-800 p-6">
-          <p className="text-white font-semibold mb-1">MarketGrow is currently in early access</p>
-          <p className="text-brand-100 text-sm mb-4">Join the waitlist and get your first month free on launch.</p>
-          <Link href="/#waitlist" className="inline-flex items-center gap-2 bg-white text-brand-700 font-semibold text-sm px-5 py-2.5 rounded-xl hover:bg-brand-50 transition-colors">
-            Join the waitlist <ArrowRight className="w-4 h-4" />
-          </Link>
-        </div>
-      );
+  case 'cta':
+  return (
+    <div key={i} className="my-8 rounded-2xl bg-gradient-to-br from-brand-600 to-brand-800 p-6">
+      <p className="text-white font-semibold mb-1">MarketGrow is now live</p>
+      <p className="text-brand-100 text-sm mb-4">Connect your stores and get AI-powered actions every day. 14 days free.</p>
+      <Link href="/register" className="inline-flex items-center gap-2 bg-white text-brand-700 font-semibold text-sm px-5 py-2.5 rounded-xl hover:bg-brand-50 transition-colors">
+        Start free trial <ArrowRight className="w-4 h-4" />
+      </Link>
+    </div>
+  );
     default:
       return null;
   }
