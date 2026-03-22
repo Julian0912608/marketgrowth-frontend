@@ -19,8 +19,12 @@ const platforms = [
     svg: `<svg viewBox="0 0 145 44" width="90" height="28" xmlns="http://www.w3.org/2000/svg"><text x="0" y="34" font-family="Arial Black,Arial" font-weight="900" font-size="36" fill="#232F3E">amazon</text><path d="M12 40 Q72 52 132 40" stroke="#FF9900" stroke-width="5" fill="none" stroke-linecap="round"/><path d="M122 33 Q135 39 132 40 Q128 34 124 37z" fill="#FF9900"/></svg>`,
   },
   {
+    name: 'Bol.com',
+    svg: `<svg viewBox="0 0 90 36" width="72" height="29" xmlns="http://www.w3.org/2000/svg"><text x="0" y="28" font-family="Arial Black, Arial" font-weight="900" font-size="30" fill="#0000FF">bol</text><circle cx="76" cy="18" r="12" fill="#0000FF"/><circle cx="76" cy="18" r="6" fill="white"/></svg>`,
+  },
+  {
     name: 'Etsy',
-    svg: `<svg viewBox="0 0 56 56" width="32" height="32" xmlns="http://www.w3.org/2000/svg"><circle cx="28" cy="28" r="28" fill="#F56400"/><path d="M17 13h22v7H24v8h13v7H24v9h15v7H17z" fill="white"/></svg>`,
+    svg: `<svg viewBox="0 0 56 56" width="28" height="28" xmlns="http://www.w3.org/2000/svg"><circle cx="28" cy="28" r="28" fill="#F56400"/><path d="M17 13h22v7H24v8h13v7H24v9h15v7H17z" fill="white"/></svg>`,
   },
   {
     name: 'Meta Ads',
@@ -97,9 +101,9 @@ export function ProductPerformance() {
 
             <div className="p-6 space-y-4">
               {[
-                { platform: 'Amazon',       color: '#FF9900', letter: 'A', cr: '8.1', revenue: '€4,200', bar: 81 },
-                { platform: 'TikTok Shop',  color: '#010101', letter: 'T', cr: '5.6', revenue: '€2,100', bar: 56 },
-                { platform: 'Shopify',      color: '#96bf47', letter: 'S', cr: '2.4', revenue: '€1,800', bar: 24 },
+                { platform: 'Amazon',      color: '#FF9900', letter: 'A', cr: '8.1', revenue: '€4,200', bar: 81 },
+                { platform: 'TikTok Shop', color: '#010101', letter: 'T', cr: '5.6', revenue: '€2,100', bar: 56 },
+                { platform: 'Shopify',     color: '#96bf47', letter: 'S', cr: '2.4', revenue: '€1,800', bar: 24 },
               ].map(row => (
                 <div key={row.platform}>
                   <div className="flex items-center justify-between mb-1.5">
@@ -121,7 +125,6 @@ export function ProductPerformance() {
               ))}
             </div>
 
-            {/* AI insight */}
             <div className="mx-6 mb-6 bg-brand-50 border border-brand-100 rounded-xl p-4 flex gap-3">
               <Sparkles className="w-4 h-4 text-brand-600 flex-shrink-0 mt-0.5" />
               <div>
@@ -143,7 +146,6 @@ export function MarketingInsights() {
       <div className="max-w-7xl mx-auto px-6">
         <div className="grid lg:grid-cols-2 gap-16 items-center">
 
-          {/* Mock marketing card */}
           <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden order-2 lg:order-1">
             <div className="px-6 py-4 border-b border-slate-100">
               <p className="text-xs text-slate-400 mb-0.5">Campaign overview</p>
@@ -152,9 +154,9 @@ export function MarketingInsights() {
 
             <div className="p-6 space-y-4">
               {[
-                { platform: 'Meta Ads',    color: '#0082FB', letter: 'M', roas: 3.8, spend: '€1,200', bar: 76 },
-                { platform: 'Google Ads',  color: '#4285F4', letter: 'G', roas: 2.1, spend: '€900',   bar: 42 },
-                { platform: 'TikTok Ads',  color: '#010101', letter: 'T', roas: 1.4, spend: '€600',   bar: 28 },
+                { platform: 'Meta Ads',   color: '#0082FB', letter: 'M', roas: 3.8, spend: '€1,200', bar: 76 },
+                { platform: 'Google Ads', color: '#4285F4', letter: 'G', roas: 2.1, spend: '€900',   bar: 42 },
+                { platform: 'TikTok Ads', color: '#010101', letter: 'T', roas: 1.4, spend: '€600',   bar: 28 },
               ].map(row => (
                 <div key={row.platform}>
                   <div className="flex items-center justify-between mb-1.5">
@@ -176,7 +178,6 @@ export function MarketingInsights() {
               ))}
             </div>
 
-            {/* AI insight */}
             <div className="mx-6 mb-6 bg-brand-50 border border-brand-100 rounded-xl p-4 flex gap-3">
               <Sparkles className="w-4 h-4 text-brand-600 flex-shrink-0 mt-0.5" />
               <div>
@@ -275,52 +276,23 @@ export function AdCreative() {
             </p>
           </div>
 
-          {/* Mock ad creative card */}
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-              <div>
-                <p className="text-xs text-slate-400 mb-0.5">Product</p>
-                <p className="font-display font-700 text-slate-900">Hydrating Face Serum</p>
-              </div>
-              <span className="text-xs bg-rose-50 text-rose-700 font-semibold px-2.5 py-1 rounded-full border border-rose-100">AI generated</span>
-            </div>
-
-            <div className="p-6">
-              {/* Top angle */}
-              <div className="mb-5">
-                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Top performing angle</p>
-                <div className="bg-gradient-to-r from-brand-50 to-violet-50 border border-brand-100 rounded-xl p-4">
-                  <p className="font-display font-700 text-slate-900 text-lg">"Hydrates skin in 24 hours"</p>
-                  <div className="flex items-center gap-2 mt-2">
-                    <span className="text-xs text-slate-500">Used in 3 top ads</span>
-                    <span className="text-xs font-semibold text-emerald-600">• Avg ROAS 4.1×</span>
-                  </div>
+          <div className="bg-slate-900 rounded-2xl p-6 space-y-3">
+            {[
+              { score: '94', concept: 'Before/After skincare routine', format: 'Video · 15s · TikTok' },
+              { score: '87', concept: 'Ingredient spotlight — Hyaluronic Acid', format: 'Carousel · Instagram' },
+              { score: '82', concept: 'Customer testimonial — 30 days result', format: 'Static · Meta Feed' },
+            ].map((item, i) => (
+              <div key={i} className="flex items-center justify-between bg-slate-50 rounded-lg px-4 py-3">
+                <div>
+                  <p className="text-sm font-medium text-slate-800">{item.concept}</p>
+                  <p className="text-xs text-slate-400 mt-0.5">{item.format}</p>
+                </div>
+                <div className="text-right flex-shrink-0 ml-4">
+                  <div className="text-sm font-bold text-brand-600">{item.score}</div>
+                  <div className="text-xs text-slate-400">score</div>
                 </div>
               </div>
-
-              {/* Suggested concepts */}
-              <div>
-                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Suggested ad concepts</p>
-                <div className="space-y-2">
-                  {[
-                    { concept: 'Before / after hydration test', format: 'Video · 15s', score: '94' },
-                    { concept: 'Dermatologist reaction video',   format: 'Video · 30s', score: '89' },
-                    { concept: 'Morning routine format',         format: 'Carousel',    score: '82' },
-                  ].map((item, i) => (
-                    <div key={i} className="flex items-center justify-between bg-slate-50 rounded-lg px-4 py-3">
-                      <div>
-                        <p className="text-sm font-medium text-slate-800">{item.concept}</p>
-                        <p className="text-xs text-slate-400 mt-0.5">{item.format}</p>
-                      </div>
-                      <div className="text-right flex-shrink-0 ml-4">
-                        <div className="text-sm font-bold text-brand-600">{item.score}</div>
-                        <div className="text-xs text-slate-400">score</div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
+            ))}
           </div>
         </div>
       </div>
@@ -331,36 +303,27 @@ export function AdCreative() {
 // ── Pricing ───────────────────────────────────────────────────
 const plans = [
   {
-    slug: 'starter',
-    name: 'Starter',
-    price: 20,
-    popular: false,
-    desc: 'Perfect for entrepreneurs just starting with data-driven growth.',
-    features: ['1 connected store', '100 AI credits / month', 'Sales dashboard', 'Order & revenue analytics', 'Weekly AI report', 'Email support'],
+    slug: 'starter', name: 'Starter', price: 20, popular: false,
+    desc: 'Perfect for solo entrepreneurs just getting started.',
+    features: ['1 connected store', '100 AI credits / month', 'Sales dashboard', 'Order analytics', 'Email support'],
     cta: 'Start free trial',
   },
   {
-    slug: 'growth',
-    name: 'Growth',
-    price: 49,
-    popular: true,
-    desc: 'For growing stores that need deeper insights and AI recommendations.',
-    features: ['3 connected stores', '2,000 AI credits / month', 'Everything in Starter', 'AI product recommendations', 'Ad analytics', 'Customer LTV forecasting', 'Daily AI briefing', 'Report export', 'Priority support'],
+    slug: 'growth', name: 'Growth', price: 49, popular: true,
+    desc: 'For growing stores that need deeper insights.',
+    features: ['3 connected stores', '2,000 AI credits / month', 'Everything in Starter', 'AI recommendations', 'Ad analytics', 'Customer LTV', 'Priority support'],
     cta: 'Start free trial',
   },
   {
-    slug: 'scale',
-    name: 'Scale',
-    price: 150,
-    popular: false,
+    slug: 'scale', name: 'Scale', price: 150, popular: false,
     desc: 'For established brands and agencies managing multiple stores.',
-    features: ['Unlimited stores', 'Unlimited AI credits', 'Everything in Growth', 'AI ad optimisation', 'White-label dashboard', 'Team accounts', 'API access', 'Dedicated account manager'],
-    cta: 'Contact sales',
+    features: ['Unlimited stores', 'Unlimited AI credits', 'Everything in Growth', 'AI ad optimisation', 'White-label dashboard', 'Team accounts', 'API access'],
+    cta: 'Start free trial',
   },
 ];
 
 export function Pricing() {
-  const [annual, setAnnual] = useState(true);
+  const [annual, setAnnual] = useState(false);
   return (
     <section id="pricing" className="py-24 bg-slate-50">
       <div className="max-w-7xl mx-auto px-6">
@@ -393,7 +356,12 @@ export function Pricing() {
                     </li>
                   ))}
                 </ul>
-                <Link href={plan.slug === 'scale' ? '/contact' : `/register?plan=${plan.slug}`} className={`block text-center py-3 rounded-xl font-semibold text-sm transition-all ${plan.popular ? 'bg-white text-brand-600 hover:bg-brand-50' : 'bg-brand-600 text-white hover:bg-brand-700'}`}>{plan.cta}</Link>
+                <Link
+                  href={`/register?plan=${plan.slug}`}
+                  className={`block text-center py-3 rounded-xl font-semibold text-sm transition-all ${plan.popular ? 'bg-white text-brand-600 hover:bg-brand-50' : 'bg-brand-600 text-white hover:bg-brand-700'}`}
+                >
+                  {plan.cta}
+                </Link>
               </div>
             );
           })}
@@ -403,34 +371,28 @@ export function Pricing() {
   );
 }
 
-// ── Early Access / Social Proof ───────────────────────────────
+// ── Testimonials / Social Proof ───────────────────────────────
 export function Testimonials() {
   const problems = [
     { emoji: '😓', title: 'Too many tabs open', desc: 'Switching between Shopify, Meta Ads and Amazon daily just to get a basic overview of your numbers.' },
-    { emoji: '📊', title: 'Data without direction', desc: 'You see the numbers, but you don\'t know which product to scale, which ad to stop or where to focus next.' },
-    { emoji: '⏱️', title: 'Hours lost every week', desc: 'Building reports manually in spreadsheets instead of actually growing your business.' },
+    { emoji: '📉', title: 'Wasted ad spend', desc: 'Pouring money into campaigns without knowing which ones actually drive profitable revenue.' },
+    { emoji: '🔍', title: 'No clear actions', desc: 'Analytics tools show you what happened — but never tell you what to do about it.' },
   ];
 
-  const waitlistAvatars = ['JK', 'MS', 'RB', 'LV', 'AT', 'PD', 'NW', 'CB'];
+  const waitlistAvatars = ['JK', 'SM', 'AO', 'RB', 'LP'];
 
   return (
-    <section id="testimonials" className="py-24 bg-white">
+    <section className="py-24 bg-white">
       <div className="max-w-7xl mx-auto px-6">
-
-        {/* Header */}
         <div className="max-w-2xl mx-auto text-center mb-16">
-          <div className="inline-flex items-center gap-2 bg-amber-50 text-amber-700 text-xs font-semibold px-3 py-1.5 rounded-full mb-4">
-            Built for real problems
-          </div>
           <h2 className="font-display text-4xl sm:text-5xl font-800 text-slate-900 mb-4">
-            Sound familiar?
+            Built for ecommerce operators
           </h2>
           <p className="text-slate-500 text-lg">
             MarketGrow is built by ecommerce operators who lived these problems every day.
           </p>
         </div>
 
-        {/* Problem cards */}
         <div className="grid md:grid-cols-3 gap-6 mb-20">
           {problems.map(p => (
             <div key={p.title} className="bg-slate-50 rounded-2xl border border-slate-100 p-6">
@@ -441,7 +403,6 @@ export function Testimonials() {
           ))}
         </div>
 
-        {/* Waitlist social proof */}
         <div className="bg-gradient-to-br from-brand-50 to-violet-50 border border-brand-100 rounded-2xl p-8 sm:p-12 text-center max-w-3xl mx-auto">
           <div className="flex items-center justify-center mb-6">
             <div className="flex -space-x-2">
@@ -457,23 +418,21 @@ export function Testimonials() {
             </div>
           </div>
           <h3 className="font-display text-2xl font-800 text-slate-900 mb-2">
-            Join the waitlist
+            Join hundreds of ecommerce entrepreneurs
           </h3>
           <p className="text-slate-500 text-base mb-2">
-            Ecommerce entrepreneurs from Shopify, Amazon and Bol.com stores are already signed up.
+            Ecommerce entrepreneurs from Shopify, Amazon and Bol.com stores are already using MarketGrow.
           </p>
           <p className="text-brand-600 font-semibold text-sm mb-6">
-            Early access members get their first month free on launch.
+            Start your free 14-day trial today — no credit card required.
           </p>
-          <a
-            href="#"
-            onClick={e => { e.preventDefault(); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+          <Link
+            href="/register"
             className="inline-flex items-center gap-2 bg-brand-600 hover:bg-brand-700 text-white font-semibold px-6 py-3 rounded-xl transition-all shadow-lg text-sm"
           >
-            Claim your early access spot →
-          </a>
+            Start free trial →
+          </Link>
         </div>
-
       </div>
     </section>
   );
@@ -526,7 +485,6 @@ export function CTA() {
           Connect your stores, get AI-powered actions every day, and stop guessing.
           14 days free — no credit card required.
         </p>
- 
         <Link
           href="/register"
           className="group inline-flex items-center gap-2 bg-white text-brand-600 hover:bg-brand-50 font-semibold px-8 py-4 rounded-xl transition-all shadow-lg text-sm"
@@ -534,48 +492,7 @@ export function CTA() {
           Start your free trial
           <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
         </Link>
- 
         <p className="text-brand-200 text-sm mt-4">No credit card · Cancel anytime · 14-day free trial</p>
-      </div>
-    </section>
-  );
-}
-
-  return (
-    <section id="waitlist" className="py-24 bg-brand-600">
-      <div className="max-w-xl mx-auto px-6 text-center">
-        <h2 className="font-display text-4xl sm:text-5xl font-800 text-white mb-4 text-balance">
-          Ready to grow smarter?
-        </h2>
-        <p className="text-brand-100 text-lg mb-10">
-          Be among the first to access MarketGrow. Early access members get their first month free.
-        </p>
-
-        {status === 'success' ? (
-          <div className="flex items-center justify-center gap-3 bg-white/20 border border-white/30 text-white font-medium px-6 py-4 rounded-xl mb-4">
-            ✓ You're on the list! We'll be in touch soon.
-          </div>
-        ) : (
-          <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-3 mb-4">
-            <input
-              type="email"
-              required
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-              placeholder="Enter your work email"
-              className="flex-1 px-4 py-3.5 rounded-xl border border-white/20 bg-white/10 text-white placeholder:text-brand-200 text-sm focus:outline-none focus:ring-2 focus:ring-white/50"
-            />
-            <button
-              type="submit"
-              disabled={status === 'loading'}
-              className="group flex items-center justify-center gap-2 bg-white text-brand-600 hover:bg-brand-50 disabled:opacity-60 font-semibold px-6 py-3.5 rounded-xl transition-all shadow-lg whitespace-nowrap text-sm"
-            >
-              {status === 'loading' ? 'Joining...' : 'Join the waitlist'}
-              {status !== 'loading' && <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />}
-            </button>
-          </form>
-        )}
-        <p className="text-brand-200 text-sm">No credit card · No spam · First month free on launch</p>
       </div>
     </section>
   );
