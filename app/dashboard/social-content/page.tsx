@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import {
   Sparkles, Copy, CheckCircle, Zap, TrendingUp,
-  ShoppingBag, Megaphone, Image, Layers, Video,
+  ShoppingBag, Megaphone, Image as ImageIcon, Layers, Video,
   Download, ChevronRight, ChevronLeft, Loader2, AlertCircle,
 } from 'lucide-react';
 import { api } from '@/lib/api';
@@ -31,7 +31,7 @@ const PLATFORMS = [
 ];
 
 const FORMATS = [
-  { id: 'single'       as ContentFormat, label: 'Single image', icon: Image,  desc: 'One impactful post' },
+  { id: 'single'       as ContentFormat, label: 'Single image', icon: ImageIcon,  desc: 'One impactful post' },
   { id: 'carousel'     as ContentFormat, label: 'Carousel',     icon: Layers, desc: 'Swipeable slides' },
   { id: 'video_script' as ContentFormat, label: 'Video script', icon: Video,  desc: '30-60 second script' },
 ];
@@ -187,7 +187,7 @@ function PostCard({
             </>
           ) : (
             <>
-              <Image className="w-8 h-8" />
+              <ImageIcon className="w-8 h-8" />
               {format === 'carousel' && post.slides && post.slides.length > 0 && (
                 <button
                   onClick={generateCarouselImages}
