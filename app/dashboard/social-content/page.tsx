@@ -51,58 +51,103 @@ const TOPICS = [
   { id: 'platform-insights'   as Topic, label: 'Platform Insights',     icon: Sparkles },
 ];
 
-// ── Post Card ─────────────────────────────────────────────────
-function PostCard({ post, index, format }: { post: GeneratedPost; index: number; format: ContentFormat }) {
-  const [copied,     setCopied]     = useState(false);
-  const [imgLoading, setImgLoading] = useState(false);
-  const [imageUrl,   setImageUrl]   = useState<string | null>(post.generatedImage ?? null);
-  const [slideIndex, setSlideIndex] = useState(0);
+// ── Hulpfunctie: één image genereren via backend ──────────────
+async function fetchGeneratedImage(
+  prompt: string,
+  slideTitle?: string,
+  slideBody?: string,
+  index?: number,
+): Promise<string | null> {
+  try {
+    const res = await api.post('/ai/generate-image', {
+      prompt,
+      slideTitle,
+      slideBody,
+      index: index ?? 0,
+    });
+    return res.data.imageUrl ?? null;
+  } catch {
+    return null;
+  }
+}
 
-  // Voor carousel: gebruik slideImages[slideIndex] als die er is
-  const currentSlideImage = format === 'carousel' && post.slideImages
-    ? (post.slideImages[slideIndex] ?? null)
+// ── Post Card ─────────────────────────────────────────────────
+function PostCard({
+  post,
+  index,
+  format,
+  onImagesGenerated,
+}: {
+  post: GeneratedPost;
+  index: number;
+  format: ContentFormat;
+  onImagesGenerated?: (postIndex: number, images: (string | null)[]) => void;
+}) {
+  const [copied,        setCopied]        = useState(false);
+  const [imgLoading,    setImgLoading]    = useState(false);
+  const [imageUrl,      setImageUrl]      = useState<string | null>(post.generatedImage ?? null);
+  const [slideImages,   setSlideImages]   = useState<(string | null)[]>(post.slideImages ?? []);
+  const [slideIndex,    setSlideIndex]    = useState(0);
+  const [imagesGenerated, setImagesGenerated] = useState(0);
+
+  const currentSlideImage = format === 'carousel'
+    ? (slideImages[slideIndex] ?? null)
     : null;
 
   const activeImage = format === 'carousel' ? currentSlideImage : imageUrl;
+  const totalSlides = post.slides?.length ?? 0;
 
   const copyText = () => {
     let text = '';
     if (format === 'video_script') {
-      text = `${post.hook}\n\n${post.script}\n\n${post.cta}`;
+      text = `${post.hook ?? ''}\n\n${post.script ?? ''}\n\n${post.cta ?? ''}`;
     } else if (format === 'carousel') {
-      text = post.slides?.map((s, i) => `Slide ${i+1}:\n${s.headline}\n${s.body}`).join('\n\n') ?? '';
+      text = post.slides?.map((s, i) => `Slide ${i + 1}:\n${s.headline}\n${s.body}`).join('\n\n') ?? '';
       text += `\n\n${post.caption ?? ''}\n\n${post.cta ?? ''}\n\n${post.hashtags?.map(h => `#${h}`).join(' ')}`;
     } else {
-      text = `${post.hook}\n\n${post.caption}\n\n${post.cta}\n\n${post.hashtags?.map(h => `#${h}`).join(' ')}`;
+      text = `${post.hook ?? ''}\n\n${post.caption ?? ''}\n\n${post.cta ?? ''}\n\n${post.hashtags?.map(h => `#${h}`).join(' ')}`;
     }
     navigator.clipboard.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const generateImage = async () => {
+  // Single image genereren
+  const generateSingleImage = async () => {
     if (!post.image_prompt) return;
     setImgLoading(true);
-    try {
-      const res = await api.post('/ai/generate-creative', {
-        productTitle: `Social post ${index + 1}`,
-        format:       'single',
-        platform:     'instagram',
-        style:        'bold',
-      });
-      if (res.data.creative?.imageUrl) setImageUrl(res.data.creative.imageUrl);
-    } catch {}
+    const url = await fetchGeneratedImage(post.image_prompt, post.hook, post.caption, index);
+    if (url) setImageUrl(url);
+    setImgLoading(false);
+  };
+
+  // Alle carousel slides genereren
+  const generateCarouselImages = async () => {
+    if (!post.slides || post.slides.length === 0) return;
+    setImgLoading(true);
+    setImagesGenerated(0);
+
+    const newImages: (string | null)[] = new Array(post.slides.length).fill(null);
+
+    for (let i = 0; i < post.slides.length; i++) {
+      const slide = post.slides[i];
+      const prompt = slide.visual_hint || post.image_prompt || `${slide.headline} — professional ecommerce analytics slide`;
+      const url = await fetchGeneratedImage(prompt, slide.headline, slide.body, i);
+      newImages[i] = url;
+      setSlideImages([...newImages]);
+      setImagesGenerated(i + 1);
+    }
+
+    onImagesGenerated?.(index, newImages);
     setImgLoading(false);
   };
 
   const downloadImage = (url: string, suffix: string = '') => {
     const a = document.createElement('a');
     a.href = url;
-    a.download = `marketgrow-creative-${index + 1}${suffix}.jpg`;
+    a.download = `marketgrow-post-${index + 1}${suffix}.svg`;
     a.click();
   };
-
-  const totalSlides = post.slides?.length ?? 0;
 
   return (
     <div className="bg-slate-800/50 border border-slate-700/50 rounded-2xl overflow-hidden">
@@ -111,15 +156,20 @@ function PostCard({ post, index, format }: { post: GeneratedPost; index: number;
       {activeImage ? (
         <div className="relative">
           <img src={activeImage} alt="Generated creative" className="w-full aspect-square object-cover" />
-          <button onClick={() => downloadImage(activeImage, format === 'carousel' ? `-slide${slideIndex+1}` : '')}
-            className="absolute top-3 right-3 w-8 h-8 rounded-lg bg-black/50 hover:bg-black/70 flex items-center justify-center transition-colors">
+          <button
+            onClick={() => downloadImage(activeImage, format === 'carousel' ? `-slide${slideIndex + 1}` : '')}
+            className="absolute top-3 right-3 w-8 h-8 rounded-lg bg-black/50 hover:bg-black/70 flex items-center justify-center transition-colors"
+          >
             <Download className="w-4 h-4 text-white" />
           </button>
           {format === 'carousel' && totalSlides > 1 && (
             <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-1">
               {post.slides!.map((_, i) => (
-                <button key={i} onClick={() => setSlideIndex(i)}
-                  className={`h-1.5 rounded-full transition-all ${i === slideIndex ? 'w-4 bg-white' : 'w-1.5 bg-white/50'}`} />
+                <button
+                  key={i}
+                  onClick={() => setSlideIndex(i)}
+                  className={`h-1.5 rounded-full transition-all ${i === slideIndex ? 'w-4 bg-white' : 'w-1.5 bg-white/50'}`}
+                />
               ))}
             </div>
           )}
@@ -129,24 +179,38 @@ function PostCard({ post, index, format }: { post: GeneratedPost; index: number;
           {imgLoading ? (
             <>
               <Loader2 className="w-6 h-6 animate-spin text-brand-400" />
-              <span className="text-xs">Generating image...</span>
+              <span className="text-xs text-slate-400">
+                {format === 'carousel'
+                  ? `Generating slide ${imagesGenerated + 1} of ${totalSlides}...`
+                  : 'Generating image...'}
+              </span>
             </>
           ) : (
             <>
               <Image className="w-8 h-8" />
-              {post.image_prompt && format !== 'carousel' && (
-                <button onClick={generateImage}
-                  className="flex items-center gap-1.5 text-xs font-medium text-brand-400 hover:text-brand-300 border border-brand-500/30 hover:border-brand-500/50 px-3 py-1.5 rounded-lg transition-colors">
+              {format === 'carousel' && post.slides && post.slides.length > 0 && (
+                <button
+                  onClick={generateCarouselImages}
+                  className="flex items-center gap-1.5 text-xs font-medium text-brand-400 hover:text-brand-300 border border-brand-500/30 hover:border-brand-500/50 px-3 py-1.5 rounded-lg transition-colors"
+                >
+                  <Sparkles className="w-3 h-3" />
+                  Generate {totalSlides} slide images
+                </button>
+              )}
+              {format === 'single' && post.image_prompt && (
+                <button
+                  onClick={generateSingleImage}
+                  className="flex items-center gap-1.5 text-xs font-medium text-brand-400 hover:text-brand-300 border border-brand-500/30 hover:border-brand-500/50 px-3 py-1.5 rounded-lg transition-colors"
+                >
                   <Sparkles className="w-3 h-3" />
                   Generate with AI
                 </button>
               )}
-              {format === 'carousel' && post.slideImages && (
-                <span className="text-xs text-slate-400 px-4 text-center">
-                  {post.slideImages.filter(Boolean).length} of {totalSlides} images generated
+              {post.image_prompt && (
+                <span className="text-xs px-4 text-center opacity-50 line-clamp-2">
+                  {post.image_prompt.slice(0, 80)}...
                 </span>
               )}
-              <span className="text-xs px-4 text-center opacity-50 line-clamp-2">{post.image_prompt?.slice(0, 80)}...</span>
             </>
           )}
         </div>
@@ -163,12 +227,18 @@ function PostCard({ post, index, format }: { post: GeneratedPost; index: number;
                 Slide {slideIndex + 1} / {post.slides.length}
               </span>
               <div className="flex items-center gap-1">
-                <button onClick={() => setSlideIndex(Math.max(0, slideIndex - 1))} disabled={slideIndex === 0}
-                  className="w-6 h-6 rounded bg-slate-700 flex items-center justify-center disabled:opacity-30">
+                <button
+                  onClick={() => setSlideIndex(Math.max(0, slideIndex - 1))}
+                  disabled={slideIndex === 0}
+                  className="w-6 h-6 rounded bg-slate-700 flex items-center justify-center disabled:opacity-30"
+                >
                   <ChevronLeft className="w-3.5 h-3.5 text-white" />
                 </button>
-                <button onClick={() => setSlideIndex(Math.min(post.slides!.length - 1, slideIndex + 1))} disabled={slideIndex === post.slides.length - 1}
-                  className="w-6 h-6 rounded bg-slate-700 flex items-center justify-center disabled:opacity-30">
+                <button
+                  onClick={() => setSlideIndex(Math.min(post.slides!.length - 1, slideIndex + 1))}
+                  disabled={slideIndex === post.slides.length - 1}
+                  className="w-6 h-6 rounded bg-slate-700 flex items-center justify-center disabled:opacity-30"
+                >
                   <ChevronRight className="w-3.5 h-3.5 text-white" />
                 </button>
               </div>
@@ -227,10 +297,14 @@ function PostCard({ post, index, format }: { post: GeneratedPost; index: number;
         )}
 
         {/* Copy button */}
-        <button onClick={copyText}
+        <button
+          onClick={copyText}
           className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-semibold transition-all ${
-            copied ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-white'
-          }`}>
+            copied
+              ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+              : 'bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-white'
+          }`}
+        >
           {copied ? <CheckCircle className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
           {copied ? 'Copied!' : 'Copy to clipboard'}
         </button>
@@ -262,16 +336,46 @@ export default function SocialContentPage() {
         tone,
         topic,
         format,
-        customContext:  customCtx,
-        count:          format === 'carousel' ? count : count,
-        generateImage:  generateImages,
+        customContext: customCtx,
+        count,
       });
-      setPosts(res.data.posts ?? []);
+
+      const generatedPosts: GeneratedPost[] = res.data.posts ?? [];
+
+      // Als images toggle aan staat: direct images genereren na content
+      if (generateImages && generatedPosts.length > 0) {
+        const postsWithImages = await Promise.all(
+          generatedPosts.map(async (post, i) => {
+            if (format === 'single' && post.image_prompt) {
+              const imageUrl = await fetchGeneratedImage(post.image_prompt, post.hook, post.caption, i);
+              return { ...post, generatedImage: imageUrl };
+            }
+            if (format === 'carousel' && post.slides) {
+              const slideImages: (string | null)[] = [];
+              for (let s = 0; s < post.slides.length; s++) {
+                const slide = post.slides[s];
+                const prompt = slide.visual_hint || post.image_prompt || slide.headline;
+                const url = await fetchGeneratedImage(prompt, slide.headline, slide.body, s);
+                slideImages.push(url);
+              }
+              return { ...post, slideImages };
+            }
+            return post;
+          })
+        );
+        setPosts(postsWithImages);
+      } else {
+        setPosts(generatedPosts);
+      }
     } catch (e: any) {
       setError(e.response?.data?.error ?? 'Something went wrong. Please try again.');
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleImagesGenerated = (postIndex: number, images: (string | null)[]) => {
+    setPosts(prev => prev.map((p, i) => i === postIndex ? { ...p, slideImages: images } : p));
   };
 
   return (
@@ -374,10 +478,13 @@ export default function SocialContentPage() {
             <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">
               Add context <span className="text-slate-600 normal-case font-normal">(optional)</span>
             </label>
-            <textarea value={customCtx} onChange={e => setCustomCtx(e.target.value)}
+            <textarea
+              value={customCtx}
+              onChange={e => setCustomCtx(e.target.value)}
               placeholder="e.g. 'We just hit €10k this month' or 'New product launching next week'"
               rows={3}
-              className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:ring-1 focus:ring-brand-500 resize-none" />
+              className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:ring-1 focus:ring-brand-500 resize-none"
+            />
           </div>
 
           {/* Count + AI images + Generate */}
@@ -416,20 +523,29 @@ export default function SocialContentPage() {
               <div>
                 <p className="text-xs font-semibold text-white">Generate AI images</p>
                 <p className="text-xs text-slate-500">
-                  {format === 'carousel' ? `Nano Banana — 1 image per slide` : 'Nano Banana visual (uses AI credits)'}
+                  {format === 'carousel' ? 'Branded SVG slide per image' : 'Branded SVG visual (uses AI credits)'}
                 </p>
               </div>
-              <button onClick={() => setGenerateImages(!generateImages)}
-                className={`w-10 h-5 rounded-full transition-all relative ${generateImages ? 'bg-brand-600' : 'bg-slate-700'}`}>
-                <div className="w-4 h-4 bg-white rounded-full absolute top-0.5 transition-all"
-                  style={{ left: generateImages ? '22px' : '2px' }} />
+              <button
+                onClick={() => setGenerateImages(!generateImages)}
+                className={`w-10 h-5 rounded-full transition-all relative ${generateImages ? 'bg-brand-600' : 'bg-slate-700'}`}
+              >
+                <div
+                  className="w-4 h-4 bg-white rounded-full absolute top-0.5 transition-all"
+                  style={{ left: generateImages ? '22px' : '2px' }}
+                />
               </button>
             </div>
 
-            <button onClick={generate} disabled={loading}
-              className="w-full bg-gradient-to-r from-brand-600 to-purple-600 hover:from-brand-700 hover:to-purple-700 disabled:opacity-60 text-white font-semibold py-3.5 rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg">
+            <button
+              onClick={generate}
+              disabled={loading}
+              className="w-full bg-gradient-to-r from-brand-600 to-purple-600 hover:from-brand-700 hover:to-purple-700 disabled:opacity-60 text-white font-semibold py-3.5 rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg"
+            >
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-              {loading ? 'Generating...' : 'Generate content'}
+              {loading
+                ? generateImages ? 'Generating content + images...' : 'Generating...'
+                : 'Generate content'}
             </button>
           </div>
         </div>
@@ -444,7 +560,9 @@ export default function SocialContentPage() {
               <div className="text-center">
                 <p className="text-white font-medium mb-1">Generating your content...</p>
                 <p className="text-slate-400 text-sm">
-                  {generateImages ? 'Creating posts + AI images — this takes ~30 seconds' : 'Analysing your store data and creating posts'}
+                  {generateImages
+                    ? 'Creating posts + AI images — this takes ~30 seconds'
+                    : 'Analysing your store data and creating posts'}
                 </p>
               </div>
             </div>
@@ -463,7 +581,13 @@ export default function SocialContentPage() {
           ) : (
             <div className={`grid gap-6 ${posts.length === 1 ? 'max-w-sm' : 'sm:grid-cols-2 xl:grid-cols-3'}`}>
               {posts.map((post, i) => (
-                <PostCard key={i} post={post} index={i} format={format} />
+                <PostCard
+                  key={i}
+                  post={post}
+                  index={i}
+                  format={format}
+                  onImagesGenerated={handleImagesGenerated}
+                />
               ))}
             </div>
           )}
