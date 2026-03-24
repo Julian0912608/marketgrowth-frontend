@@ -340,7 +340,17 @@ export default function SocialContentPage() {
         count,
       });
 
-      const generatedPosts: GeneratedPost[] = res.data.posts ?? [];
+      // Sanitize: zorg dat alle vereiste velden bestaan
+      const generatedPosts: GeneratedPost[] = (res.data.posts ?? []).map((p: any) => ({
+        ...p,
+        hashtags:   Array.isArray(p.hashtags)   ? p.hashtags   : [],
+        slides:     Array.isArray(p.slides)      ? p.slides     : [],
+        slideImages: Array.isArray(p.slideImages) ? p.slideImages : [],
+        hook:        p.hook    ?? '',
+        caption:     p.caption ?? '',
+        cta:         p.cta     ?? '',
+        script:      p.script  ?? '',
+      }));
 
       // Als images toggle aan staat: direct images genereren na content
       if (generateImages && generatedPosts.length > 0) {
