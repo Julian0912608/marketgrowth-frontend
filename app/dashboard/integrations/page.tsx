@@ -1,26 +1,39 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Plus, RefreshCw, Trash2, CheckCircle, AlertCircle, Clock, Loader2, Megaphone } from 'lucide-react';
+import {
+  RefreshCw, Trash2, Plus, CheckCircle, AlertCircle,
+  Clock, Loader2, Megaphone,
+} from 'lucide-react';
 import { api } from '@/lib/api';
 
+// ── Platform config ───────────────────────────────────────────
 const PLATFORMS = [
-  { id: 'shopify',     name: 'Shopify',     color: 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400', type: 'oauth',       fields: [] },
-  { id: 'bolcom',      name: 'Bol.com',     color: 'bg-blue-500/10 border-blue-500/20 text-blue-400',         type: 'credentials', fields: ['apiKey', 'apiSecret'] },
-  { id: 'etsy',        name: 'Etsy',        color: 'bg-amber-500/10 border-amber-500/20 text-amber-400',      type: 'credentials', fields: ['shopId', 'accessToken'] },
-  { id: 'woocommerce', name: 'WooCommerce', color: 'bg-violet-500/10 border-violet-500/20 text-violet-400',   type: 'credentials', fields: ['siteUrl', 'consumerKey', 'consumerSecret'] },
-  { id: 'amazon',      name: 'Amazon',      color: 'bg-orange-500/10 border-orange-500/20 text-orange-400',   type: 'coming_soon', fields: [] },
-  { id: 'pinterest',   name: 'Pinterest',   color: 'bg-rose-500/10 border-rose-500/20 text-rose-400',         type: 'coming_soon', fields: [] },
+  { id: 'shopify',     name: 'Shopify',     type: 'oauth',       color: 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400', fields: [] },
+  { id: 'bolcom',      name: 'Bol.com',     type: 'apikey',      color: 'bg-blue-500/10 border-blue-500/20 text-blue-400',         fields: ['apiKey', 'apiSecret'] },
+  { id: 'etsy',        name: 'Etsy',        type: 'oauth',       color: 'bg-orange-500/10 border-orange-500/20 text-orange-400',   fields: [] },
+  { id: 'woocommerce', name: 'WooCommerce', type: 'apikey',      color: 'bg-purple-500/10 border-purple-500/20 text-purple-400',   fields: ['storeUrl', 'apiKey', 'apiSecret'] },
+  { id: 'amazon',      name: 'Amazon',      type: 'coming_soon', color: 'bg-amber-500/10 border-amber-500/20 text-amber-400',      fields: [] },
+  { id: 'pinterest',   name: 'Pinterest',   type: 'coming_soon', color: 'bg-rose-500/10 border-rose-500/20 text-rose-400',         fields: [] },
 ];
 
 const FIELD_LABELS: Record<string, string> = {
-  apiKey:         'Client ID',
-  apiSecret:      'Client Secret',
-  shopId:         'Shop ID',
-  accessToken:    'Access Token',
-  siteUrl:        'Store URL (https://...)',
-  consumerKey:    'Consumer Key',
-  consumerSecret: 'Consumer Secret',
+  apiKey:    'API Key',
+  apiSecret: 'API Secret',
+  storeUrl:  'Store URL (https://...)',
+};
+
+// Advertising platforms — kunnen meerdere zijn
+interface AdvIntegration {
+  id:       string;
+  platform: string;
+  name:     string;
+  color:    string;
+}
+
+const ADV_PLATFORMS: Record<string, { name: string; color: string }> = {
+  bolcom_ads:  { name: 'Bol.com Ads',  color: 'bg-blue-500/10 border-blue-500/20 text-blue-400' },
+  google_ads:  { name: 'Google Ads',   color: 'bg-amber-500/10 border-amber-500/20 text-amber-400' },
 };
 
 function StatusBadge({ status, errorMessage }: { status: string; errorMessage?: string }) {
@@ -45,32 +58,35 @@ function StatusBadge({ status, errorMessage }: { status: string; errorMessage?: 
 }
 
 export default function IntegrationsPage() {
-  const [connections,       setConnections]       = useState<any[]>([]);
-  const [connecting,        setConnecting]        = useState<string | null>(null);
-  const [formData,          setFormData]          = useState<Record<string, string>>({});
-  const [loading,           setLoading]           = useState(false);
-  const [syncing,           setSyncing]           = useState<string | null>(null);
-  const [error,             setError]             = useState('');
+  const [connections,   setConnections]   = useState<any[]>([]);
+  const [connecting,    setConnecting]    = useState<string | null>(null);
+  const [formData,      setFormData]      = useState<Record<string, string>>({});
+  const [loading,       setLoading]       = useState(false);
+  const [syncing,       setSyncing]       = useState<string | null>(null);
+  const [error,         setError]         = useState('');
 
-  // Bol.com Advertising state
-  const [advConnecting,     setAdvConnecting]     = useState(false);
-  const [advForm,           setAdvForm]           = useState({ clientId: '', clientSecret: '' });
-  const [advLoading,        setAdvLoading]        = useState(false);
-  const [advConnected,      setAdvConnected]      = useState(false);
-  const [advSyncing,        setAdvSyncing]        = useState(false);
-
-  // Google Ads state
-  const [googleConnected,   setGoogleConnected]   = useState(false);
-  const [googleSyncing,     setGoogleSyncing]     = useState(false);
-  const [googleLoading,     setGoogleLoading]     = useState(false);
+  // Advertising state
+  const [advIntegrations, setAdvIntegrations] = useState<AdvIntegration[]>([]);
+  const [advConnecting,   setAdvConnecting]   = useState(false);
+  const [advForm,         setAdvForm]         = useState({ clientId: '', clientSecret: '' });
+  const [advLoading,      setAdvLoading]      = useState(false);
+  const [advSyncing,      setAdvSyncing]      = useState<string | null>(null);
 
   const load = async () => {
     try {
       const res  = await api.get('/integrations');
       const data = res.data.connections ?? res.data ?? [];
       setConnections(data);
-      setAdvConnected(data.some((c: any) => (c.platformSlug ?? c.platform) === 'bolcom_ads'));
-      setGoogleConnected(data.some((c: any) => (c.platformSlug ?? c.platform) === 'google_ads'));
+
+      // Haal alle advertising koppelingen op
+      const advs: AdvIntegration[] = data
+        .filter((c: any) => ADV_PLATFORMS[c.platformSlug ?? c.platform])
+        .map((c: any) => {
+          const slug    = c.platformSlug ?? c.platform;
+          const advInfo = ADV_PLATFORMS[slug];
+          return { id: c.id, platform: slug, name: advInfo.name, color: advInfo.color };
+        });
+      setAdvIntegrations(advs);
     } catch {}
   };
 
@@ -84,31 +100,6 @@ export default function IntegrationsPage() {
       window.location.href = res.data.installUrl;
     } catch (err: any) {
       setError(err.response?.data?.error ?? 'Failed to connect Shopify');
-    }
-  };
-
-  const handleGoogleConnect = async () => {
-    setGoogleLoading(true);
-    setError('');
-    try {
-      const res = await api.get('/integrations/advertising/google/connect');
-      window.location.href = res.data.authUrl;
-    } catch (err: any) {
-      setError(err.response?.data?.error ?? 'Google Ads verbinding mislukt');
-      setGoogleLoading(false);
-    }
-  };
-
-  const handleGoogleSync = async () => {
-    setGoogleSyncing(true);
-    try {
-      const res = await api.post('/integrations/advertising/google/sync');
-      alert(`Google Ads sync voltooid: ${res.data.campaignCount} campagnes`);
-      await load();
-    } catch (err: any) {
-      setError(err.response?.data?.error ?? 'Google Ads sync mislukt');
-    } finally {
-      setGoogleSyncing(false);
     }
   };
 
@@ -137,7 +128,7 @@ export default function IntegrationsPage() {
   };
 
   const handleDisconnect = async (id: string) => {
-    if (!confirm('Disconnect this store? All synced data will remain.')) return;
+    if (!confirm('Disconnect this integration? All synced data will remain.')) return;
     try {
       await api.delete(`/integrations/${id}`);
       await load();
@@ -157,25 +148,45 @@ export default function IntegrationsPage() {
       setAdvForm({ clientId: '', clientSecret: '' });
       await load();
     } catch (err: any) {
-      setError(err.response?.data?.error ?? 'Advertising koppeling mislukt');
+      setError(err.response?.data?.error ?? 'Advertising connection failed');
     } finally {
       setAdvLoading(false);
     }
   };
 
-  const handleAdvSync = async () => {
-    setAdvSyncing(true);
+  const handleAdvSync = async (platform: string) => {
+    setAdvSyncing(platform);
     try {
-      const res = await api.post('/integrations/advertising/bolcom/sync');
-      alert(`Sync voltooid: ${res.data.campaigns} campagnes, €${res.data.totalSpend?.toFixed(2)} spend`);
+      if (platform === 'bolcom_ads') {
+        const res = await api.post('/integrations/advertising/bolcom/sync');
+        alert(`Sync complete: ${res.data.campaigns} campaigns, €${res.data.totalSpend?.toFixed(2)} spend`);
+      }
     } catch (err: any) {
-      setError(err.response?.data?.error ?? 'Sync mislukt');
+      setError(err.response?.data?.error ?? 'Sync failed');
     } finally {
-      setAdvSyncing(false);
+      setAdvSyncing(null);
     }
   };
 
-  const connectedPlatforms = new Set(connections.map((c: any) => c.platform ?? c.platformSlug));
+  const handleAdvDisconnect = async (id: string, name: string) => {
+    if (!confirm(`Disconnect ${name}? All synced ad data will remain.`)) return;
+    try {
+      await api.delete(`/integrations/${id}`);
+      await load();
+    } catch (err: any) {
+      setError(err.response?.data?.error ?? 'Disconnect failed');
+    }
+  };
+
+  const connectedPlatforms = new Set(
+    connections
+      .filter((c: any) => !ADV_PLATFORMS[c.platformSlug ?? c.platform])
+      .map((c: any) => c.platform ?? c.platformSlug)
+  );
+
+  const storeConnections = connections.filter(
+    (c: any) => !ADV_PLATFORMS[c.platformSlug ?? c.platform]
+  );
 
   return (
     <div className="p-6 max-w-5xl mx-auto">
@@ -185,54 +196,52 @@ export default function IntegrationsPage() {
       </div>
 
       {error && (
-        <div className="bg-rose-500/10 border border-rose-500/20 text-rose-400 text-sm px-4 py-3 rounded-xl mb-6">
-          {error}
-          <button onClick={() => setError('')} className="ml-2 underline text-xs">Sluiten</button>
+        <div className="bg-rose-500/10 border border-rose-500/20 text-rose-400 text-sm px-4 py-3 rounded-xl mb-6 flex items-center justify-between">
+          <span>{error}</span>
+          <button onClick={() => setError('')} className="ml-2 underline text-xs">Close</button>
         </div>
       )}
 
       {/* Connected stores */}
-      {connections.filter((c: any) => !['bolcom_ads', 'google_ads'].includes(c.platform ?? c.platformSlug)).length > 0 && (
+      {storeConnections.length > 0 && (
         <div className="mb-8">
           <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-4">Connected stores</h2>
           <div className="space-y-3">
-            {connections
-              .filter((c: any) => !['bolcom_ads', 'google_ads'].includes(c.platform ?? c.platformSlug))
-              .map((c: any) => (
-                <div key={c.id} className="bg-slate-800/50 border border-slate-700/50 rounded-2xl px-5 py-4 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-slate-700 flex items-center justify-center text-white text-xs font-bold">
-                      {(c.shopName || c.platformName || c.platformSlug || '?')[0].toUpperCase()}
-                    </div>
-                    <div>
-                      <div className="text-sm font-medium text-white">{c.shopName || c.platformName || c.platformSlug}</div>
-                      <div className="flex items-center gap-2 mt-0.5">
-                        <StatusBadge status={c.status} errorMessage={c.errorMessage} />
-                        {c.ordersCount > 0 && (
-                          <span className="text-xs text-slate-500">{c.ordersCount} orders</span>
-                        )}
-                      </div>
-                    </div>
+            {storeConnections.map((c: any) => (
+              <div key={c.id} className="bg-slate-800/50 border border-slate-700/50 rounded-xl px-4 py-3 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-slate-700 flex items-center justify-center text-xs font-bold text-white shrink-0">
+                    {(c.shopName || c.platformName || c.platformSlug || '?')[0].toUpperCase()}
                   </div>
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => handleSync(c.id)}
-                      disabled={syncing === c.id}
-                      className="w-8 h-8 rounded-lg bg-slate-700 hover:bg-slate-600 flex items-center justify-center text-slate-400 hover:text-white transition-colors disabled:opacity-50"
-                      title="Sync"
-                    >
-                      <RefreshCw className={`w-3.5 h-3.5 ${syncing === c.id ? 'animate-spin' : ''}`} />
-                    </button>
-                    <button
-                      onClick={() => handleDisconnect(c.id)}
-                      className="w-8 h-8 rounded-lg bg-slate-700 hover:bg-rose-600/20 flex items-center justify-center text-slate-400 hover:text-rose-400 transition-colors"
-                      title="Disconnect"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
+                  <div>
+                    <div className="text-sm font-medium text-white">
+                      {c.shopName || c.platformName || c.platformSlug}
+                    </div>
+                    <div className="flex items-center gap-3 mt-0.5">
+                      <StatusBadge status={c.status} errorMessage={c.errorMessage} />
+                      <span className="text-xs text-slate-500">{c.ordersCount ?? 0} orders</span>
+                    </div>
                   </div>
                 </div>
-              ))}
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => handleSync(c.id)}
+                    disabled={syncing === c.id}
+                    className="w-8 h-8 rounded-lg bg-slate-700 hover:bg-slate-600 flex items-center justify-center text-slate-400 hover:text-white transition-colors disabled:opacity-50"
+                    title="Sync"
+                  >
+                    <RefreshCw className={`w-3.5 h-3.5 ${syncing === c.id ? 'animate-spin' : ''}`} />
+                  </button>
+                  <button
+                    onClick={() => handleDisconnect(c.id)}
+                    className="w-8 h-8 rounded-lg bg-slate-700 hover:bg-rose-600/20 flex items-center justify-center text-slate-400 hover:text-rose-400 transition-colors"
+                    title="Disconnect"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       )}
@@ -270,7 +279,7 @@ export default function IntegrationsPage() {
                         type={field.toLowerCase().includes('secret') || field.toLowerCase().includes('token') ? 'password' : 'text'}
                         placeholder={FIELD_LABELS[field] ?? field}
                         value={formData[field] ?? ''}
-                        onChange={e => setFormData(prev => ({ ...prev, [field]: e.target.value }))}
+                        onChange={e => setFormData(f => ({ ...f, [field]: e.target.value }))}
                         className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
                       />
                     ))}
@@ -284,7 +293,7 @@ export default function IntegrationsPage() {
                         Connect
                       </button>
                       <button
-                        onClick={() => { setConnecting(null); setFormData({}); setError(''); }}
+                        onClick={() => { setConnecting(null); setFormData({}); }}
                         className="px-3 py-2 bg-slate-700 text-slate-400 text-xs rounded-lg hover:bg-slate-600 transition-colors"
                       >
                         Cancel
@@ -293,7 +302,11 @@ export default function IntegrationsPage() {
                   </div>
                 ) : (
                   <button
-                    onClick={() => platform.type === 'oauth' ? handleShopifyInstall() : setConnecting(platform.id)}
+                    onClick={() => platform.type === 'oauth' && platform.id === 'shopify'
+                      ? handleShopifyInstall()
+                      : platform.type === 'oauth'
+                      ? handleConnect(platform.id)
+                      : setConnecting(platform.id)}
                     className="mt-3 w-full flex items-center justify-center gap-1.5 bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-white text-xs font-medium py-2 rounded-lg transition-colors"
                   >
                     <Plus className="w-3.5 h-3.5" />
@@ -306,117 +319,123 @@ export default function IntegrationsPage() {
         </div>
       </div>
 
-      {/* Advertising integraties */}
+      {/* Advertising */}
       <div>
         <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-4">Advertising</h2>
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
 
-          {/* Bol.com Advertising */}
-          <div className="bg-slate-800/50 border border-slate-700/50 rounded-2xl p-5">
-            <div className="flex items-center justify-between mb-4">
-              <div className="w-10 h-10 rounded-xl border bg-blue-500/10 border-blue-500/20 flex items-center justify-center">
-                <Megaphone className="w-4 h-4 text-blue-400" />
-              </div>
-              {advConnected && (
+          {/* Connected advertising platforms */}
+          {advIntegrations.map(adv => (
+            <div key={adv.id} className="bg-slate-800/50 border border-slate-700/50 rounded-2xl p-5">
+              <div className="flex items-center justify-between mb-4">
+                <div className={`w-10 h-10 rounded-xl border flex items-center justify-center ${adv.color}`}>
+                  <Megaphone className="w-4 h-4" />
+                </div>
                 <div className="flex items-center gap-1 text-xs text-emerald-400 font-medium">
                   <CheckCircle className="w-3.5 h-3.5" />
                   Connected
                 </div>
-              )}
+              </div>
+              <h3 className="font-display font-700 text-white mb-1">{adv.name}</h3>
+              <p className="text-xs text-slate-500 mb-3">Campaign performance, spend and ROAS</p>
+              <div className="flex gap-2">
+                {adv.platform === 'bolcom_ads' && (
+                  <button
+                    onClick={() => handleAdvSync(adv.platform)}
+                    disabled={advSyncing === adv.platform}
+                    className="flex-1 flex items-center justify-center gap-1.5 bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-white text-xs font-medium py-2 rounded-lg transition-colors disabled:opacity-50"
+                  >
+                    <RefreshCw className={`w-3.5 h-3.5 ${advSyncing === adv.platform ? 'animate-spin' : ''}`} />
+                    {advSyncing === adv.platform ? 'Syncing...' : 'Sync now'}
+                  </button>
+                )}
+                <button
+                  onClick={() => handleAdvDisconnect(adv.id, adv.name)}
+                  className="w-8 h-8 rounded-lg bg-slate-700 hover:bg-rose-600/20 flex items-center justify-center text-slate-400 hover:text-rose-400 transition-colors shrink-0"
+                  title="Disconnect"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              </div>
             </div>
-            <h3 className="font-display font-700 text-white mb-1">Bol.com Ads</h3>
-            <p className="text-xs text-slate-500 mb-3">Campaign performance, spend and ROAS</p>
+          ))}
 
-            {advConnected ? (
-              <button
-                onClick={handleAdvSync}
-                disabled={advSyncing}
-                className="w-full flex items-center justify-center gap-1.5 bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-white text-xs font-medium py-2 rounded-lg transition-colors disabled:opacity-50"
-              >
-                <RefreshCw className={`w-3.5 h-3.5 ${advSyncing ? 'animate-spin' : ''}`} />
-                {advSyncing ? 'Syncing...' : 'Sync now'}
-              </button>
-            ) : advConnecting ? (
-              <div className="space-y-2 mt-2">
-                <input
-                  type="text"
-                  placeholder="Client ID"
-                  value={advForm.clientId}
-                  onChange={e => setAdvForm(p => ({ ...p, clientId: e.target.value }))}
-                  className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
-                />
-                <input
-                  type="password"
-                  placeholder="Client Secret"
-                  value={advForm.clientSecret}
-                  onChange={e => setAdvForm(p => ({ ...p, clientSecret: e.target.value }))}
-                  className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
-                />
-                <div className="flex gap-2 pt-1">
-                  <button
-                    onClick={handleAdvConnect}
-                    disabled={advLoading}
-                    className="flex-1 bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold py-2 rounded-lg transition-colors flex items-center justify-center gap-1.5 disabled:opacity-60"
-                  >
-                    {advLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : null}
-                    Connect
-                  </button>
-                  <button
-                    onClick={() => setAdvConnecting(false)}
-                    className="px-3 py-2 bg-slate-700 text-slate-400 text-xs rounded-lg hover:bg-slate-600 transition-colors"
-                  >
-                    Cancel
-                  </button>
+          {/* Bol.com Ads connect form (alleen als nog niet connected) */}
+          {!advIntegrations.some(a => a.platform === 'bolcom_ads') && (
+            <div className="bg-slate-800/50 border border-slate-700/50 rounded-2xl p-5">
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-10 h-10 rounded-xl border bg-blue-500/10 border-blue-500/20 flex items-center justify-center">
+                  <Megaphone className="w-4 h-4 text-blue-400" />
                 </div>
               </div>
-            ) : (
-              <button
-                onClick={() => setAdvConnecting(true)}
-                className="mt-3 w-full flex items-center justify-center gap-1.5 bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-white text-xs font-medium py-2 rounded-lg transition-colors"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                Connect
-              </button>
-            )}
-          </div>
+              <h3 className="font-display font-700 text-white mb-1">Bol.com Ads</h3>
+              <p className="text-xs text-slate-500 mb-3">Campaign performance, spend and ROAS</p>
 
-          {/* Google Ads */}
-          <div className="bg-slate-800/50 border border-slate-700/50 rounded-2xl p-5">
-            <div className="flex items-center justify-between mb-4">
-              <div className="w-10 h-10 rounded-xl border bg-amber-500/10 border-amber-500/20 flex items-center justify-center">
-                <Megaphone className="w-4 h-4 text-amber-400" />
-              </div>
-              {googleConnected && (
-                <div className="flex items-center gap-1 text-xs text-emerald-400 font-medium">
-                  <CheckCircle className="w-3.5 h-3.5" />
-                  Connected
+              {advConnecting ? (
+                <div className="space-y-2">
+                  <input
+                    type="text"
+                    placeholder="Advertising Client ID"
+                    value={advForm.clientId}
+                    onChange={e => setAdvForm(f => ({ ...f, clientId: e.target.value }))}
+                    className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+                  />
+                  <input
+                    type="password"
+                    placeholder="Advertising Client Secret"
+                    value={advForm.clientSecret}
+                    onChange={e => setAdvForm(f => ({ ...f, clientSecret: e.target.value }))}
+                    className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+                  />
+                  <div className="flex gap-2 pt-1">
+                    <button
+                      onClick={handleAdvConnect}
+                      disabled={advLoading || !advForm.clientId || !advForm.clientSecret}
+                      className="flex-1 bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold py-2 rounded-lg transition-colors flex items-center justify-center gap-1.5 disabled:opacity-60"
+                    >
+                      {advLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : null}
+                      Connect
+                    </button>
+                    <button
+                      onClick={() => { setAdvConnecting(false); setAdvForm({ clientId: '', clientSecret: '' }); }}
+                      className="px-3 py-2 bg-slate-700 text-slate-400 text-xs rounded-lg hover:bg-slate-600 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                  <p className="text-xs text-slate-500 pt-1">
+                    Find your credentials at{' '}
+                    <a href="https://retailer.bol.com" target="_blank" rel="noopener noreferrer" className="text-brand-400 underline">
+                      retailer.bol.com
+                    </a>
+                    {' '}→ Settings → API credentials → Advertising
+                  </p>
                 </div>
+              ) : (
+                <button
+                  onClick={() => setAdvConnecting(true)}
+                  className="w-full flex items-center justify-center gap-1.5 bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-white text-xs font-medium py-2 rounded-lg transition-colors"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  Connect
+                </button>
               )}
             </div>
-            <h3 className="font-display font-700 text-white mb-1">Google Ads</h3>
-            <p className="text-xs text-slate-500 mb-3">Campaign performance, spend and ROAS</p>
+          )}
 
-            {googleConnected ? (
-              <button
-                onClick={handleGoogleSync}
-                disabled={googleSyncing}
-                className="w-full flex items-center justify-center gap-1.5 bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-white text-xs font-medium py-2 rounded-lg transition-colors disabled:opacity-50"
-              >
-                <RefreshCw className={`w-3.5 h-3.5 ${googleSyncing ? 'animate-spin' : ''}`} />
-                {googleSyncing ? 'Syncing...' : 'Sync now'}
-              </button>
-            ) : (
-              <button
-                onClick={handleGoogleConnect}
-                disabled={googleLoading}
-                className="mt-3 w-full flex items-center justify-center gap-1.5 bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-white text-xs font-medium py-2 rounded-lg transition-colors disabled:opacity-50"
-              >
-                {googleLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
-                {googleLoading ? 'Redirecting...' : 'Connect'}
-              </button>
-            )}
-          </div>
-
+          {/* Coming soon advertising platforms */}
+          {[
+            { id: 'meta_ads',    name: 'Meta Ads',    color: 'bg-blue-500/10 border-blue-500/20 text-blue-400' },
+            { id: 'tiktok_ads',  name: 'TikTok Ads',  color: 'bg-slate-700/50 border-slate-600/50 text-slate-400' },
+          ].map(p => (
+            <div key={p.id} className="bg-slate-800/30 border border-slate-700/30 rounded-2xl p-5 opacity-50">
+              <div className={`w-10 h-10 rounded-xl border flex items-center justify-center mb-4 ${p.color}`}>
+                <Megaphone className="w-4 h-4" />
+              </div>
+              <h3 className="font-display font-700 text-slate-400 mb-1">{p.name}</h3>
+              <p className="text-xs text-slate-600">Coming soon</p>
+            </div>
+          ))}
         </div>
       </div>
     </div>
