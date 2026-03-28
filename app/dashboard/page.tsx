@@ -11,6 +11,7 @@ import {
 import { useAuthStore } from '@/lib/store';
 import { api } from '@/lib/api';
 import { OnboardingChecklist } from '@/components/dashboard/OnboardingChecklist';
+import { AppLoader } from '@/components/dashboard/AppLoader';
 
 // ── Types ──────────────────────────────────────────────────────
 interface Stats {
@@ -88,82 +89,75 @@ export default function DashboardPage() {
   const [credits,      setCredits]      = useState<Credits | null>(null);
   const [loading,      setLoading]      = useState(true);
   const [syncing,      setSyncing]      = useState<string | null>(null);
+  const [appReady,     setAppReady]     = useState(false);
 
-  useEffect(() => {
-    const load = async () => {
-      setLoading(true);
+  // Ontvang data van AppLoader zodra die klaar is
+  const handleAppReady = (data: {
+    integrations: any[];
+    overview:     any;
+    topProducts:  any[];
+    credits:      any;
+  }) => {
+    setIntegrations(data.integrations ?? []);
+    setTopProducts(data.topProducts ?? []);
+    setCredits(data.credits);
 
-      // Fase 1 — kritieke data: winkels + 7d overzicht
-      const [intRes, ovRes] = await Promise.allSettled([
-        api.get('/integrations'),
-        api.get('/analytics/overview?period=7d'),
-      ]);
+    if (data.overview) {
+      const curr = data.overview.current;
+      const revenue = parseFloat(curr?.revenue ?? 0);
+      const orders  = parseInt(curr?.orders_count ?? 0);
+      setStats({
+        revenue,
+        orders,
+        avgOrder: orders > 0 ? revenue / orders : 0,
+        change: {
+          revenue: data.overview.changes?.revenue ?? 0,
+          orders:  data.overview.changes?.orders_count ?? 0,
+        },
+      });
+    }
 
-      if (intRes.status === 'fulfilled') {
-        setIntegrations(intRes.value.data ?? []);
-      }
+    setLoading(false);
+    setAppReady(true);
 
-      if (ovRes.status === 'fulfilled') {
-        const curr = ovRes.value.data?.current;
-        const prev = ovRes.value.data?.previous;
-        const revenue  = parseFloat(curr?.revenue ?? 0);
-        const prevRev  = parseFloat(prev?.revenue ?? 0);
-        const orders   = parseInt(curr?.orders_count ?? 0);
-        const prevOrd  = parseInt(prev?.orders_count ?? 0);
-        setStats({
-          revenue,
-          orders,
-          avgOrder: orders > 0 ? revenue / orders : 0,
-          change: {
-            revenue: ovRes.value.data?.changes?.revenue ?? 0,
-            orders:  ovRes.value.data?.changes?.orders_count ?? 0,
-          },
-        });
-      }
+    // Achtergrond: AI insights laden
+    api.get('/ai/insights').then(res => setInsight(res.data)).catch(() => {});
+  };
 
-      setLoading(false);
+  // Herlaad stats na sync
+  const reloadStats = async () => {
+    const [intRes, ovRes] = await Promise.allSettled([
+      api.get('/integrations'),
+      api.get('/analytics/overview?period=7d'),
+    ]);
+    if (intRes.status === 'fulfilled') setIntegrations(intRes.value.data ?? []);
+    if (ovRes.status === 'fulfilled') {
+      const curr = ovRes.value.data?.current;
+      const revenue = parseFloat(curr?.revenue ?? 0);
+      const orders  = parseInt(curr?.orders_count ?? 0);
+      setStats({
+        revenue,
+        orders,
+        avgOrder: orders > 0 ? revenue / orders : 0,
+        change: {
+          revenue: ovRes.value.data?.changes?.revenue ?? 0,
+          orders:  ovRes.value.data?.changes?.orders_count ?? 0,
+        },
+      });
+    }
+  };
 
-      // Fase 2 — achtergrond: top producten, AI insights, credits
-      const [tp, ins, cr] = await Promise.allSettled([
-        api.get('/analytics/top-products?limit=3&period=7d'),
-        api.get('/ai/insights'),
-        api.get('/ai/credits'),
-      ]);
-      if (tp.status === 'fulfilled')  setTopProducts(tp.value.data.products ?? []);
-      if (ins.status === 'fulfilled') setInsight(ins.value.data);
-      if (cr.status === 'fulfilled')  setCredits(cr.value.data);
-    };
-
-    load();
-  }, []);
+  // Toon AppLoader totdat data klaar is
+  if (!appReady) {
+    return <AppLoader onReady={handleAppReady} />;
+  }
 
   // Handmatige sync per integratie
   const handleSync = async (integrationId: string) => {
     setSyncing(integrationId);
     try {
       await api.post(`/integrations/${integrationId}/sync`, { jobType: 'incremental' });
-      // Herlaad stats na 4 seconden
-      setTimeout(async () => {
-        const [intRes, ovRes] = await Promise.allSettled([
-          api.get('/integrations'),
-          api.get('/analytics/overview?period=7d'),
-        ]);
-        if (intRes.status === 'fulfilled') setIntegrations(intRes.value.data ?? []);
-        if (ovRes.status === 'fulfilled') {
-          const curr = ovRes.value.data?.current;
-          const revenue = parseFloat(curr?.revenue ?? 0);
-          const orders  = parseInt(curr?.orders_count ?? 0);
-          setStats({
-            revenue,
-            orders,
-            avgOrder: orders > 0 ? revenue / orders : 0,
-            change: {
-              revenue: ovRes.value.data?.changes?.revenue ?? 0,
-              orders:  ovRes.value.data?.changes?.orders_count ?? 0,
-            },
-          });
-        }
-      }, 4000);
+      setTimeout(() => reloadStats(), 4000);
     } catch {}
     setSyncing(null);
   };
