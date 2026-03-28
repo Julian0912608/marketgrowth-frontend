@@ -1,35 +1,46 @@
 'use client';
 
+// components/dashboard/DashboardLayout.tsx
+//
+// FIX: Nav items zijn nu gated op plan.
+// Locked items tonen een slot-icoon en openen de upgrade modal
+// in plaats van naar een pagina te navigeren die een 403 geeft.
+
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
   LayoutDashboard, TrendingUp, ShoppingBag, Megaphone,
   Plug, Settings, LogOut, Zap, Bell, Menu, Sparkles,
-  Instagram, Store,
+  Instagram, Store, Lock, Users,
 } from 'lucide-react';
 import { useAuthStore } from '@/lib/store';
+import { usePermissions } from '@/lib/usePermissions';
 import { api } from '@/lib/api';
 import { UpgradeModal } from '@/components/UpgradeModal';
 import { TrialBanner } from '@/components/dashboard/TrialBanner';
 
+// feature = null betekent altijd beschikbaar (settings, integrations, etc.)
 const navItems = [
-  { label: 'Overview',       href: '/dashboard',                 icon: LayoutDashboard },
-  { label: 'Shops',          href: '/dashboard/shops',           icon: Store },
-  { label: 'Sales',          href: '/dashboard/analytics',       icon: TrendingUp },
-  { label: 'Products',       href: '/dashboard/products',        icon: ShoppingBag },
-  { label: 'Advertising',    href: '/dashboard/ads',             icon: Megaphone },
-  { label: 'AI Insights',    href: '/dashboard/ai-insights',     icon: Sparkles },
-  { label: 'Social Content', href: '/dashboard/social-content',  icon: Instagram },
-  { label: 'Integrations',   href: '/dashboard/integrations',    icon: Plug },
-  { label: 'Settings',       href: '/settings',                  icon: Settings },
+  { label: 'Overview',       href: '/dashboard',                feature: null,                   icon: LayoutDashboard },
+  { label: 'Shops',          href: '/dashboard/shops',          feature: 'multi-shop',           icon: Store },
+  { label: 'Sales',          href: '/dashboard/analytics',      feature: 'order-analytics',      icon: TrendingUp },
+  { label: 'Products',       href: '/dashboard/products',       feature: 'order-analytics',      icon: ShoppingBag },
+  { label: 'Advertising',    href: '/dashboard/ads',            feature: 'ad-analytics',         icon: Megaphone },
+  { label: 'AI Insights',    href: '/dashboard/ai-insights',    feature: 'ai-recommendations',   icon: Sparkles },
+  { label: 'Social Content', href: '/dashboard/social-content', feature: 'ai-recommendations',   icon: Instagram },
+  { label: 'Team',           href: '/dashboard/team',           feature: 'team-accounts',        icon: Users },
+  { label: 'Integrations',   href: '/dashboard/integrations',   feature: null,                   icon: Plug },
+  { label: 'Settings',       href: '/settings',                 feature: null,                   icon: Settings },
 ];
 
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const pathname = usePathname();
-  const router   = useRouter();
+  const pathname   = usePathname();
+  const router     = useRouter();
   const { user, updateUser, clearAuth } = useAuthStore();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { can, requiredPlan, planSlug } = usePermissions();
+  const [sidebarOpen, setSidebarOpen]   = useState(false);
+  const [upgradeFeature, setUpgradeFeature] = useState<{ feature: string; requiredPlan: string } | null>(null);
 
   useEffect(() => {
     const refreshUser = async () => {
@@ -40,10 +51,11 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
           email:     res.data.email,
           firstName: res.data.firstName,
           lastName:  res.data.lastName,
+          planSlug:  res.data.planSlug,
           role:      res.data.role,
         });
       } catch {
-        // 401 = token verlopen, axios interceptor handelt redirect af
+        // 401 handled by axios interceptor
       }
     };
     refreshUser();
@@ -53,6 +65,17 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
     try { await api.post('/auth/logout'); } catch {}
     clearAuth();
     router.push('/login');
+  };
+
+  const handleLockedClick = (feature: string) => {
+    const needed = requiredPlan(feature);
+    window.dispatchEvent(new CustomEvent('upgrade-required', {
+      detail: {
+        feature,
+        requiredPlan: needed ?? 'growth',
+        message: `This feature is available on the ${needed ?? 'Growth'} plan and above.`,
+      },
+    }));
   };
 
   const Sidebar = () => (
@@ -71,9 +94,25 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
       {/* Nav */}
       <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
         {navItems.map(item => {
+          const locked = item.feature !== null && !can(item.feature);
           const active =
             pathname === item.href ||
             (item.href !== '/dashboard' && item.href !== '/settings' && pathname.startsWith(item.href));
+
+          if (locked) {
+            return (
+              <button
+                key={item.href}
+                onClick={() => handleLockedClick(item.feature!)}
+                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all text-slate-600 hover:text-slate-400 hover:bg-slate-800/30 group"
+              >
+                <item.icon className="w-4 h-4 flex-shrink-0" />
+                <span className="flex-1 text-left">{item.label}</span>
+                <Lock className="w-3 h-3 opacity-50 group-hover:opacity-100 transition-opacity" />
+              </button>
+            );
+          }
+
           return (
             <Link
               key={item.href}
@@ -90,6 +129,20 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
             </Link>
           );
         })}
+
+        {/* Upgrade nudge voor Starter */}
+        {planSlug === 'starter' && (
+          <div className="mt-4 mx-1 p-3 rounded-xl bg-brand-600/10 border border-brand-600/20">
+            <p className="text-xs font-semibold text-brand-400 mb-1">Upgrade to Growth</p>
+            <p className="text-xs text-slate-500 mb-2">Unlock AI insights, ad analytics and more.</p>
+            <Link
+              href="/settings?tab=billing"
+              className="block text-center text-xs font-semibold bg-brand-600 hover:bg-brand-700 text-white py-1.5 rounded-lg transition-colors"
+            >
+              View plans →
+            </Link>
+          </div>
+        )}
       </nav>
 
       {/* User */}
@@ -102,7 +155,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
             <div className="text-xs font-medium text-white truncate">
               {user?.firstName} {user?.lastName}
             </div>
-            <div className="text-xs text-slate-500 capitalize">{(user as any)?.planSlug ?? 'starter'} plan</div>
+            <div className="text-xs text-slate-500 capitalize">{planSlug} plan</div>
           </div>
         </div>
         <button
@@ -153,7 +206,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
         </main>
       </div>
 
-      {/* Upgrade modal — luistert globaal naar 403 events */}
+      {/* Upgrade modal — luistert globaal naar upgrade-required events */}
       <UpgradeModal />
     </div>
   );
