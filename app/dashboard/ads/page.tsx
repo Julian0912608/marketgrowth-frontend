@@ -216,9 +216,8 @@ export default function AdsPage() {
     try {
       if (platform === 'bolcom_ads') {
         await api.post('/integrations/advertising/bolcom/sync');
-      } else if (platform === 'google_ads') {
-        await api.post('/integrations/advertising/google/sync');
       }
+      // Google Ads sync gaat via de scheduler — geen aparte sync endpoint
       await load();
     } catch {}
     setSyncing(null);
@@ -328,7 +327,7 @@ export default function AdsPage() {
               <PlatformBlock
                 key={group.platform}
                 group={group}
-                onSync={['bolcom_ads', 'google_ads'].includes(group.platform) ? () => handleSync(group.platform) : undefined}
+                onSync={group.platform === 'bolcom_ads' ? () => handleSync(group.platform) : undefined}
                 syncing={syncing === group.platform}
               />
             ))}
