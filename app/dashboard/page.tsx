@@ -7,13 +7,13 @@
 //  2. Error boundaries rondom API-afhankelijke secties
 //  3. AI credits tonen met limiet-context per plan
 //  4. Starter plan ziet AI Insights als available (100 credits)
+//  5. Scale plan toont "Unlimited" badge prominent in credits card
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import {
   TrendingUp, ShoppingCart, Zap, ArrowUpRight, ArrowDownRight,
-  Store, RefreshCw, Sparkles, Plus, AlertCircle,
+  Store, RefreshCw, Sparkles, Plus, AlertCircle, Infinity,
 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/lib/store';
@@ -31,10 +31,10 @@ interface Stats {
 }
 
 interface TopProduct {
-  title:       string;
-  platform:    string;
-  units_sold:  number;
-  revenue:     number;
+  title:      string;
+  platform:   string;
+  units_sold: number;
+  revenue:    number;
 }
 
 interface Integration {
@@ -57,6 +57,7 @@ interface Credits {
   limit:     number | null;
   remaining: number | null;
   unlimited: boolean;
+  planSlug?: string;
 }
 
 // ── Helpers ───────────────────────────────────────────────────
@@ -139,24 +140,29 @@ function EmptyDashboard() {
   );
 }
 
-// ── Credit bar voor Starter plan ──────────────────────────────
-function CreditBar({ credits, planSlug }: { credits: Credits | null; planSlug: string }) {
-  if (!credits) return null;
+// ── Credit bar voor Starter/Growth ────────────────────────────
+function CreditBar({ credits, planSlug }: { credits: Credits; planSlug: string }) {
   if (credits.unlimited) return null;
 
-  const used      = credits.used ?? 0;
-  const limit     = credits.limit ?? 100;
-  const pct       = Math.min(100, Math.round((used / limit) * 100));
-  const isLow     = pct >= 80;
+  const used  = credits.used ?? 0;
+  const limit = credits.limit ?? 100;
+  const pct   = Math.min(100, Math.round((used / limit) * 100));
+  const isLow      = pct >= 80;
   const isExhausted = pct >= 100;
 
   return (
-    <div className={`rounded-xl border p-4 mb-6 ${isExhausted ? 'bg-rose-500/5 border-rose-500/20' : isLow ? 'bg-amber-500/5 border-amber-500/20' : 'bg-slate-800/50 border-slate-700/50'}`}>
+    <div className={`rounded-xl border p-4 mb-6 ${
+      isExhausted
+        ? 'bg-rose-500/5 border-rose-500/20'
+        : isLow
+          ? 'bg-amber-500/5 border-amber-500/20'
+          : 'bg-slate-800/50 border-slate-700/50'
+    }`}>
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
           <Zap className={`w-3.5 h-3.5 ${isExhausted ? 'text-rose-400' : isLow ? 'text-amber-400' : 'text-brand-400'}`} />
           <span className="text-xs font-medium text-slate-300">
-            AI Credits this month — {planSlug.charAt(0).toUpperCase() + planSlug.slice(1)} plan
+            AI Credits this month
           </span>
         </div>
         <span className={`text-xs font-semibold ${isExhausted ? 'text-rose-400' : isLow ? 'text-amber-400' : 'text-slate-400'}`}>
@@ -165,7 +171,9 @@ function CreditBar({ credits, planSlug }: { credits: Credits | null; planSlug: s
       </div>
       <div className="h-1.5 bg-slate-700 rounded-full overflow-hidden">
         <div
-          className={`h-full rounded-full transition-all ${isExhausted ? 'bg-rose-500' : isLow ? 'bg-amber-500' : 'bg-brand-500'}`}
+          className={`h-full rounded-full transition-all ${
+            isExhausted ? 'bg-rose-500' : isLow ? 'bg-amber-500' : 'bg-brand-500'
+          }`}
           style={{ width: `${pct}%` }}
         />
       </div>
@@ -179,23 +187,72 @@ function CreditBar({ credits, planSlug }: { credits: Credits | null; planSlug: s
       )}
       {isLow && !isExhausted && (
         <p className="text-xs text-amber-400 mt-2">
-          {limit - used} credits remaining — <Link href="/settings/billing" className="underline underline-offset-2 hover:text-amber-300">upgrade for more</Link>
+          {limit - used} credits remaining —{' '}
+          <Link href="/settings/billing" className="underline underline-offset-2 hover:text-amber-300">
+            upgrade for more
+          </Link>
         </p>
       )}
     </div>
   );
 }
 
-// ── Dashboard stats card ──────────────────────────────────────
+// ── AI Credits stat card content ──────────────────────────────
+// Aparte component zodat de Unlimited / beperkte weergave
+// duidelijk gescheiden is van de generieke StatCard.
+function CreditsCardContent({ credits, loading }: { credits: Credits | null; loading: boolean }) {
+  if (loading || !credits) {
+    return (
+      <>
+        <div className="h-7 bg-slate-700/50 rounded-lg animate-pulse mb-2 w-20" />
+        <p className="text-slate-500 text-xs">Loading...</p>
+      </>
+    );
+  }
+
+  if (credits.unlimited) {
+    return (
+      <>
+        <div className="flex items-center gap-2 mb-1">
+          <span className="font-display text-2xl font-800 text-white">Unlimited</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <div className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+          <span className="text-xs text-emerald-400 font-medium">Scale plan — no limits</span>
+        </div>
+      </>
+    );
+  }
+
+  const remaining = credits.remaining ?? 0;
+  const limit     = credits.limit ?? 100;
+  const pct       = Math.min(100, Math.round(((credits.used ?? 0) / limit) * 100));
+  const isLow     = pct >= 80;
+  const isOut     = pct >= 100;
+
+  return (
+    <>
+      <p className={`font-display text-2xl font-800 mb-1 ${isOut ? 'text-rose-400' : isLow ? 'text-amber-400' : 'text-white'}`}>
+        {remaining.toLocaleString('nl-NL')}
+      </p>
+      <p className="text-slate-500 text-xs">
+        {isOut
+          ? 'Credits used up this month'
+          : `of ${limit} credits remaining`
+        }
+      </p>
+    </>
+  );
+}
+
+// ── Generieke stat card ───────────────────────────────────────
 function StatCard({
-  label, value, change, icon: Icon, color, sub,
+  label, children, icon: Icon, color,
 }: {
-  label:   string;
-  value:   string | null;
-  change?: number;
-  icon:    any;
-  color:   string;
-  sub?:    string;
+  label:    string;
+  children: React.ReactNode;
+  icon:     any;
+  color:    string;
 }) {
   return (
     <div className="bg-slate-800/50 border border-slate-700/50 rounded-2xl p-5">
@@ -205,21 +262,15 @@ function StatCard({
           <Icon className="w-4 h-4 text-white" />
         </div>
       </div>
-      {value === null ? (
-        <div className="h-7 bg-slate-700/50 rounded-lg animate-pulse mb-2" />
-      ) : (
-        <p className="font-display text-2xl font-800 text-white mb-1">{value}</p>
-      )}
-      {sub && <p className="text-slate-500 text-xs">{sub}</p>}
-      {change !== undefined && value !== null && <ChangeBadge change={change} />}
+      {children}
     </div>
   );
 }
 
 // ── Hoofdcomponent ────────────────────────────────────────────
 export default function DashboardPage() {
-  const { user }        = useAuthStore();
-  const { planSlug }    = usePermissions();
+  const { user }     = useAuthStore();
+  const { planSlug } = usePermissions();
 
   const [stats,        setStats]        = useState<Stats | null>(null);
   const [topProducts,  setTopProducts]  = useState<TopProduct[]>([]);
@@ -286,9 +337,7 @@ export default function DashboardPage() {
           },
         });
       }
-    } catch {
-      // stil falen is ok bij reload
-    }
+    } catch {}
   };
 
   if (!appReady) {
@@ -303,10 +352,6 @@ export default function DashboardPage() {
     } catch {}
     setSyncing(null);
   };
-
-  const creditsStr = credits
-    ? (credits.unlimited ? '∞' : (credits.remaining ?? 0).toLocaleString('nl-NL'))
-    : '—';
 
   const stores = integrations.filter(
     i => !['bolcom_ads', 'google_ads'].includes(i.platformSlug) && i.status !== 'disconnected'
@@ -338,7 +383,7 @@ export default function DashboardPage() {
           </Link>
         </div>
 
-        {/* Credit bar voor Starter (en Growth als bijna op) */}
+        {/* Credit bar — alleen voor Starter/Growth als bijna op */}
         {credits && !credits.unlimited && (
           <CreditBar credits={credits} planSlug={planSlug} />
         )}
@@ -350,38 +395,58 @@ export default function DashboardPage() {
           </CardErrorBoundary>
         )}
 
-        {/* Normale dashboard content als er stores zijn */}
+        {/* Normale dashboard content */}
         {hasStores && (
           <>
-            {/* 7-dagen KPI cards */}
+            {/* KPI cards */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-              <StatCard
-                label="Revenue excl. VAT (7d)"
-                value={loading ? null : formatCurrency((stats?.revenue ?? 0) / 1.21)}
-                change={stats?.change.revenue}
-                icon={TrendingUp}
-                color="bg-emerald-500"
-              />
-              <StatCard
-                label="Orders (7d)"
-                value={loading ? null : (stats?.orders ?? 0).toString()}
-                change={stats?.change.orders}
-                icon={ShoppingCart}
-                color="bg-blue-500"
-              />
-              <StatCard
-                label="AI credits"
-                value={loading ? null : creditsStr}
-                sub={credits?.unlimited ? 'Unlimited' : `of ${credits?.limit ?? 100} this month`}
-                icon={Zap}
-                color="bg-violet-500"
-              />
-              <StatCard
-                label="Avg order value (7d)"
-                value={loading ? null : formatCurrency(stats?.avgOrder ?? 0)}
-                icon={TrendingUp}
-                color="bg-amber-500"
-              />
+
+              {/* Revenue */}
+              <StatCard label="Revenue excl. VAT (7d)" icon={TrendingUp} color="bg-emerald-500">
+                {loading || !stats ? (
+                  <div className="h-7 bg-slate-700/50 rounded-lg animate-pulse mb-2" />
+                ) : (
+                  <>
+                    <p className="font-display text-2xl font-800 text-white mb-1">
+                      {formatCurrency((stats.revenue ?? 0) / 1.21)}
+                    </p>
+                    <ChangeBadge change={stats.change.revenue} />
+                  </>
+                )}
+              </StatCard>
+
+              {/* Orders */}
+              <StatCard label="Orders (7d)" icon={ShoppingCart} color="bg-blue-500">
+                {loading || !stats ? (
+                  <div className="h-7 bg-slate-700/50 rounded-lg animate-pulse mb-2" />
+                ) : (
+                  <>
+                    <p className="font-display text-2xl font-800 text-white mb-1">
+                      {(stats.orders ?? 0).toString()}
+                    </p>
+                    <ChangeBadge change={stats.change.orders} />
+                  </>
+                )}
+              </StatCard>
+
+              {/* AI Credits — plan-aware weergave */}
+              <StatCard label="AI Credits" icon={Zap} color="bg-violet-500">
+                <CreditsCardContent credits={credits} loading={loading} />
+              </StatCard>
+
+              {/* Avg order value */}
+              <StatCard label="Avg order value (7d)" icon={TrendingUp} color="bg-amber-500">
+                {loading || !stats ? (
+                  <div className="h-7 bg-slate-700/50 rounded-lg animate-pulse mb-2" />
+                ) : (
+                  <>
+                    <p className="font-display text-2xl font-800 text-white mb-1">
+                      {formatCurrency(stats.avgOrder ?? 0)}
+                    </p>
+                    <p className="text-slate-500 text-xs">per order</p>
+                  </>
+                )}
+              </StatCard>
             </div>
 
             {/* Stores + Top products */}
@@ -452,7 +517,7 @@ export default function DashboardPage() {
               </CardErrorBoundary>
             </div>
 
-            {/* AI Insight preview (alle plans) */}
+            {/* AI Insight preview */}
             <CardErrorBoundary>
               <div className="bg-slate-800/50 border border-slate-700/50 rounded-2xl p-5">
                 <div className="flex items-center justify-between mb-4">
@@ -470,7 +535,12 @@ export default function DashboardPage() {
                 {insightError ? (
                   <div className="flex items-center gap-2 text-slate-500 text-sm py-2">
                     <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                    <span>Insight couldn't load. <Link href="/dashboard/ai-insights" className="text-brand-400 hover:text-brand-300">Try the full page →</Link></span>
+                    <span>
+                      Insight couldn't load.{' '}
+                      <Link href="/dashboard/ai-insights" className="text-brand-400 hover:text-brand-300">
+                        Try the full page →
+                      </Link>
+                    </span>
                   </div>
                 ) : insight ? (
                   <div>
@@ -478,7 +548,7 @@ export default function DashboardPage() {
                     {insight.actions?.slice(0, 2).map((action, i) => (
                       <div key={i} className="flex items-start gap-3 py-2 border-t border-slate-700/50 first:border-0 first:pt-0">
                         <div className={`w-1.5 h-1.5 rounded-full mt-1.5 flex-shrink-0 ${
-                          action.priority === 'high' ? 'bg-rose-400' :
+                          action.priority === 'high'   ? 'bg-rose-400'  :
                           action.priority === 'medium' ? 'bg-amber-400' : 'bg-slate-500'
                         }`} />
                         <div>
