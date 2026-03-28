@@ -204,8 +204,8 @@ export default function DashboardPage() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         {[
           {
-            label: 'Omzet (7d)',
-            value: loading ? null : formatCurrency(stats?.revenue ?? 0),
+            label: 'Omzet excl. BTW (7d)',
+            value: loading ? null : formatCurrency((stats?.revenue ?? 0) / 1.21),
             change: stats?.change.revenue,
             icon: TrendingUp, color: 'bg-emerald-500',
           },
@@ -222,9 +222,9 @@ export default function DashboardPage() {
             icon: Zap, color: 'bg-violet-500',
           },
           {
-            label: 'Winkels',
-            value: loading ? null : stores.length.toString(),
-            sub: stores.length === 0 ? 'Nog geen winkels' : stores.map(i => i.shopName || i.platformName).join(', '),
+            label: 'Verkocht (7d)',
+            value: loading ? null : (topProducts.reduce((s, p) => s + (parseInt(String(p.total_sold)) || 0), 0)).toString() + ' stuks',
+            sub: 'Totaal verkochte producten',
             icon: Store, color: 'bg-amber-500',
           },
         ].map((stat, i) => (
@@ -320,7 +320,8 @@ export default function DashboardPage() {
                     </p>
                   </div>
                   <span className="text-sm font-semibold text-emerald-400">
-                    {formatCurrency(parseFloat(String(p.total_revenue)))}
+                    {formatCurrency(parseFloat(String(p.total_revenue)) / 1.21)}
+                    <span className="text-xs text-slate-500 font-normal ml-1">excl.</span>
                   </span>
                 </div>
               ))}
