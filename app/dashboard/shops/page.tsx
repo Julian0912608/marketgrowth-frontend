@@ -99,9 +99,9 @@ export default function ShopsPage() {
             status:        int.status,
             lastSyncAt:    int.lastSyncAt,
             errorMessage:  int.errorMessage,
-            revenue7d:     revenue,
+            revenue7d:     revenue / 1.21,
             orders7d:      orders,
-            avgOrder7d:    orders > 0 ? revenue / orders : 0,
+            avgOrder7d:    orders > 0 ? (revenue / 1.21) / orders : 0,
             revenueChange: revenueChg,
           } as ShopStats;
         } catch {
@@ -168,7 +168,7 @@ export default function ShopsPage() {
       {shops.length > 1 && (
         <div className="grid grid-cols-2 gap-4 mb-6">
           <div className="bg-slate-800/50 border border-slate-700/50 rounded-2xl p-5">
-            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">Totale omzet (7d)</p>
+            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">Totale omzet excl. BTW (7d)</p>
             <p className="text-2xl font-bold text-white">{formatEur(totalRevenue)}</p>
             <p className="text-xs text-slate-500 mt-1">over {shops.length} winkels</p>
           </div>
@@ -237,7 +237,7 @@ export default function ShopsPage() {
                 {/* Stats */}
                 <div className="grid grid-cols-3 gap-3 mb-4">
                   <div className="bg-slate-900/40 rounded-xl p-3 text-center">
-                    <p className="text-slate-500 text-xs mb-1">Omzet (7d)</p>
+                    <p className="text-slate-500 text-xs mb-1">Omzet excl. BTW (7d)</p>
                     <p className="text-white font-bold text-sm">{formatEur(shop.revenue7d)}</p>
                     {shop.revenueChange !== 0 && (
                       <p className={`text-xs mt-0.5 ${shop.revenueChange >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
