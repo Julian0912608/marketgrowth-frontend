@@ -33,24 +33,29 @@ function formatCurrency(n: number) {
   return new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR' }).format(n ?? 0);
 }
 
-// Genereer productlink — voor Bol.com is sku = EAN
+// Genereer productlink — Bol.com via offer ID (directe productpagina)
 function getProductUrl(product: any): string | null {
   if (!product) return null;
 
-  const ean = product.ean || product.sku;
+  const ean     = product.ean || product.sku;
+  const offerId = product.offer_id || product.external_id;
 
-  if (product.platform === 'bolcom' && ean) {
-    // Directe EAN zoekopdracht op Bol.com
-    return `https://www.bol.com/nl/nl/s/?searchtext=${encodeURIComponent(ean)}`;
+  if (product.platform === 'bolcom') {
+    // Gebruik offer ID voor directe productpagina indien beschikbaar
+    if (offerId && offerId.length > 10 && !/^\d{8,14}$/.test(offerId)) {
+      return `https://www.bol.com/nl/nl/p/product/${offerId}/`;
+    }
+    // Fallback: EAN search
+    if (ean) return `https://www.bol.com/nl/nl/s/?searchtext=${encodeURIComponent(ean)}`;
   }
   if (product.platform === 'shopify' && product.shop_domain && product.handle) {
     return `https://${product.shop_domain}/products/${product.handle}`;
   }
-  if (product.platform === 'amazon' && (product.external_id || ean)) {
-    return `https://www.amazon.nl/dp/${product.external_id || ean}`;
+  if (product.platform === 'amazon' && (offerId || ean)) {
+    return `https://www.amazon.nl/dp/${offerId || ean}`;
   }
-  if (product.platform === 'etsy' && product.external_id) {
-    return `https://www.etsy.com/listing/${product.external_id}`;
+  if (product.platform === 'etsy' && offerId) {
+    return `https://www.etsy.com/listing/${offerId}`;
   }
   return null;
 }
