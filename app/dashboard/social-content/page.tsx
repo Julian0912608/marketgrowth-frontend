@@ -17,6 +17,7 @@ interface Product {
   id:           string;
   title:        string;
   ean:          string | null;
+  imageUrl:     string | null;
   priceMin:     number | null;
   priceMax:     number | null;
   inventory:    number;
@@ -80,19 +81,33 @@ function ProductCard({ product, selected, onSelect }: { product: Product; select
   return (
     <button
       onClick={onSelect}
-      className={`w-full text-left p-4 rounded-xl border transition-all ${
+      className={`w-full text-left p-3 rounded-xl border transition-all ${
         selected
           ? 'border-brand-500 bg-brand-600/10'
           : 'border-slate-700/50 bg-slate-800/30 hover:border-slate-600'
       }`}
     >
-      <div className="flex items-start gap-3">
-        <div className="w-9 h-9 rounded-lg bg-slate-700 flex items-center justify-center flex-shrink-0">
-          <Package className="w-4 h-4 text-slate-400" />
+      <div className="flex items-center gap-3">
+        {/* Productafbeelding of fallback icon */}
+        <div className="w-12 h-12 rounded-lg bg-slate-700 flex-shrink-0 overflow-hidden">
+          {product.imageUrl ? (
+            <img
+              src={product.imageUrl}
+              alt={product.title}
+              className="w-full h-full object-cover"
+              onError={(e) => {
+                (e.target as HTMLImageElement).style.display = 'none';
+              }}
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center">
+              <Package className="w-5 h-5 text-slate-500" />
+            </div>
+          )}
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-sm font-medium text-white truncate">{product.title}</p>
-          <div className="flex items-center gap-2 mt-1 flex-wrap">
+          <div className="flex items-center gap-2 mt-0.5 flex-wrap">
             <span className={`text-xs px-1.5 py-0.5 rounded border ${PLATFORM_COLORS[product.platform] ?? 'bg-slate-700 text-slate-400 border-slate-600'}`}>
               {product.platform}
             </span>
@@ -102,13 +117,13 @@ function ProductCard({ product, selected, onSelect }: { product: Product; select
             {product.units30d > 0 && (
               <span className="text-xs text-emerald-400 flex items-center gap-1">
                 <TrendingUp className="w-3 h-3" />
-                {product.units30d} sold
+                {product.units30d}×
               </span>
             )}
           </div>
         </div>
         {selected && (
-          <CheckCircle className="w-4 h-4 text-brand-400 flex-shrink-0 mt-0.5" />
+          <CheckCircle className="w-4 h-4 text-brand-400 flex-shrink-0" />
         )}
       </div>
     </button>
@@ -465,7 +480,11 @@ export default function SocialContentPage() {
             className="w-full bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 disabled:opacity-50 text-white font-semibold py-3.5 rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg"
           >
             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-            {loading ? 'Genereren...' : selectedProd ? `Genereer voor "${selectedProd.title.slice(0, 25)}..."` : 'Selecteer een product'}
+            {loading
+              ? 'Genereren...'
+              : selectedProd
+              ? `Genereer voor "${selectedProd.title.slice(0, 22)}${selectedProd.title.length > 22 ? '...' : ''}"`
+              : 'Selecteer een product'}
           </button>
 
           {error && (
