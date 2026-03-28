@@ -7,7 +7,7 @@ import { useState, useEffect } from 'react';
 import {
   Megaphone, TrendingUp, MousePointer, Eye,
   RefreshCw, AlertCircle, ArrowUpRight, ArrowDownRight,
-  Zap, BarChart3,
+  Zap, BarChart3, Loader2,
 } from 'lucide-react';
 import { api } from '@/lib/api';
 
