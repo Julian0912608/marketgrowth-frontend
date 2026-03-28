@@ -168,13 +168,13 @@ function PlatformBlock({ group, onSync, syncing }: {
                             <span className="text-white font-medium truncate max-w-[180px]">{c.name}</span>
                           </div>
                         </td>
-                        <td className="px-3 py-3 text-right text-slate-300">{formatEur(c.spend)}</td>
-                        <td className="px-3 py-3 text-right text-slate-300">{formatEur(c.revenue)}</td>
+                        <td className="px-3 py-3 text-right text-slate-300">{formatEur(parseFloat(String(c.spend   ?? 0)) || 0)}</td>
+                        <td className="px-3 py-3 text-right text-slate-300">{formatEur(parseFloat(String(c.revenue ?? 0)) || 0)}</td>
                         <td className="px-3 py-3 text-right">
-                          <RoasBadge roas={c.roas} />
+                          <RoasBadge roas={parseFloat(String(c.roas ?? 0)) || 0} />
                         </td>
-                        <td className="px-3 py-3 text-right text-slate-300">{formatNum(c.clicks)}</td>
-                        <td className="px-5 py-3 text-right text-slate-400">{c.ctr?.toFixed(1)}%</td>
+                        <td className="px-3 py-3 text-right text-slate-300">{formatNum(parseInt(String(c.clicks ?? 0)) || 0)}</td>
+                        <td className="px-5 py-3 text-right text-slate-400">{(parseFloat(String(c.ctr ?? 0)) || 0).toFixed(1)}%</td>
                       </tr>
                     ))}
                   </tbody>
@@ -232,10 +232,10 @@ export default function AdsPage() {
       return acc;
     }, {} as Record<string, Campaign[]>)
   ).map(([platform, cams]) => {
-    const totalSpend   = cams.reduce((s, c) => s + (c.spend ?? 0), 0);
-    const totalRevenue = cams.reduce((s, c) => s + (c.revenue ?? 0), 0);
-    const totalClicks  = cams.reduce((s, c) => s + (c.clicks ?? 0), 0);
-    const totalImp     = cams.reduce((s, c) => s + (c.impressions ?? 0), 0);
+    const totalSpend   = cams.reduce((s, c) => s + (parseFloat(String(c.spend   ?? 0)) || 0), 0);
+    const totalRevenue = cams.reduce((s, c) => s + (parseFloat(String(c.revenue ?? 0)) || 0), 0);
+    const totalClicks  = cams.reduce((s, c) => s + (parseInt(String(c.clicks      ?? 0)) || 0), 0);
+    const totalImp     = cams.reduce((s, c) => s + (parseInt(String(c.impressions ?? 0)) || 0), 0);
     const cfg = PLATFORM_CONFIG[platform] ?? { label: platform, color: '', accent: '' };
     return {
       platform,
