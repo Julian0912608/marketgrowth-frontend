@@ -3,8 +3,8 @@
 // components/dashboard/DashboardLayout.tsx
 //
 // FIX: Nav items zijn nu gated op plan.
-// Locked items tonen een slot-icoon en openen de upgrade modal
-// in plaats van naar een pagina te navigeren die een 403 geeft.
+// Locked items tonen een slot-icoon en openen de upgrade modal.
+// Globale content generatie indicator: toont spinner als AI bezig is.
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
@@ -16,9 +16,19 @@ import {
 } from 'lucide-react';
 import { useAuthStore } from '@/lib/store';
 import { usePermissions } from '@/lib/usePermissions';
+import { useContentStore } from '@/lib/contentStore';
 import { api } from '@/lib/api';
 import { UpgradeModal } from '@/components/UpgradeModal';
 import { TrialBanner } from '@/components/dashboard/TrialBanner';
+
+import { Loader2 } from 'lucide-react';
+
+// Kleine spinner naast "Social Content" in de sidebar als er gegenereerd wordt
+function GeneratingBadge() {
+  const status = useContentStore(s => s.status);
+  if (status !== 'generating') return null;
+  return <Loader2 className="w-3 h-3 animate-spin text-purple-400 flex-shrink-0" />;
+}
 
 // feature = null betekent altijd beschikbaar (settings, integrations, etc.)
 const navItems = [
@@ -99,6 +109,9 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
             pathname === item.href ||
             (item.href !== '/dashboard' && item.href !== '/settings' && pathname.startsWith(item.href));
 
+          // Generatie indicator op Social Content nav item
+          const isContentItem = item.href === '/dashboard/social-content';
+
           if (locked) {
             return (
               <button
@@ -125,7 +138,8 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
               }`}
             >
               <item.icon className="w-4 h-4 flex-shrink-0" />
-              {item.label}
+              <span className="flex-1">{item.label}</span>
+              {isContentItem && <GeneratingBadge />}
             </Link>
           );
         })}
