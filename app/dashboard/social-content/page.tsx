@@ -1,16 +1,18 @@
 'use client';
 
 // app/dashboard/social-content/page.tsx
-// Compleet herbouwd: product-first marketing content generator
-// Kies een product uit je winkel → kies platform + stijl → genereer content + beeld
+// Globale generatie via Zustand contentStore.
+// - Blijft doordraaien bij navigatie naar andere pagina
+// - Opnieuw genereren begint altijd vanaf 0 (reset + nieuwe generatie-ID)
 
 import { useState, useEffect, useCallback } from 'react';
 import {
-  Sparkles, Search, Loader2, Instagram, Image as ImageIcon,
-  Layers, BookOpen, ShoppingBag, RefreshCw, Copy, CheckCircle,
+  Sparkles, Search, Loader2, Image as ImageIcon,
+  Layers, BookOpen, Copy, CheckCircle,
   ChevronLeft, ChevronRight, Download, TrendingUp, Package,
 } from 'lucide-react';
 import { api } from '@/lib/api';
+import { useContentStore } from '@/lib/contentStore';
 
 // ── Types ──────────────────────────────────────────────────────
 interface Product {
@@ -25,17 +27,6 @@ interface Product {
   shopName:     string;
   revenue30d:   number;
   units30d:     number;
-}
-
-interface GeneratedContent {
-  hook?:       string;
-  caption?:    string;
-  cta?:        string;
-  hashtags:    string[];
-  image_prompt?: string;
-  imageUrl?:   string | null;
-  slides?:     { headline: string; body: string; visual_hint: string }[];
-  product:     { title: string; price: string };
 }
 
 type Platform = 'instagram' | 'tiktok' | 'facebook' | 'pinterest';
@@ -58,10 +49,10 @@ const FORMATS: { id: Format; label: string; desc: string; icon: any }[] = [
 ];
 
 const TONES: { id: Tone; label: string; desc: string }[] = [
-  { id: 'lifestyle',   label: 'Lifestyle',     desc: 'Aspirationeel & warm' },
-  { id: 'promotional', label: 'Promotioneel',  desc: 'Sales-gericht, urgentie' },
-  { id: 'educational', label: 'Educatief',     desc: 'Informerend & betrouwbaar' },
-  { id: 'ugc',         label: 'UGC-stijl',     desc: 'Authentiek, eerste persoon' },
+  { id: 'lifestyle',   label: 'Lifestyle',    desc: 'Aspirationeel & warm' },
+  { id: 'promotional', label: 'Promotioneel', desc: 'Sales-gericht, urgentie' },
+  { id: 'educational', label: 'Educatief',    desc: 'Informerend & betrouwbaar' },
+  { id: 'ugc',         label: 'UGC-stijl',    desc: 'Authentiek, eerste persoon' },
 ];
 
 const PLATFORM_COLORS: Record<string, string> = {
@@ -76,8 +67,10 @@ function formatEur(val: number) {
   return new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR', minimumFractionDigits: 0 }).format(val);
 }
 
-// ── Product Card ────────────────────────────────────────────────
-function ProductCard({ product, selected, onSelect }: { product: Product; selected: boolean; onSelect: () => void }) {
+// ── Product Card ───────────────────────────────────────────────
+function ProductCard({ product, selected, onSelect }: {
+  product: Product; selected: boolean; onSelect: () => void;
+}) {
   return (
     <button
       onClick={onSelect}
@@ -88,16 +81,13 @@ function ProductCard({ product, selected, onSelect }: { product: Product; select
       }`}
     >
       <div className="flex items-center gap-3">
-        {/* Productafbeelding of fallback icon */}
         <div className="w-12 h-12 rounded-lg bg-slate-700 flex-shrink-0 overflow-hidden">
           {product.imageUrl ? (
             <img
               src={product.imageUrl}
               alt={product.title}
               className="w-full h-full object-cover"
-              onError={(e) => {
-                (e.target as HTMLImageElement).style.display = 'none';
-              }}
+              onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center">
@@ -116,32 +106,35 @@ function ProductCard({ product, selected, onSelect }: { product: Product; select
             )}
             {product.units30d > 0 && (
               <span className="text-xs text-emerald-400 flex items-center gap-1">
-                <TrendingUp className="w-3 h-3" />
-                {product.units30d}×
+                <TrendingUp className="w-3 h-3" />{product.units30d}×
               </span>
             )}
           </div>
         </div>
-        {selected && (
-          <CheckCircle className="w-4 h-4 text-brand-400 flex-shrink-0" />
-        )}
+        {selected && <CheckCircle className="w-4 h-4 text-brand-400 flex-shrink-0" />}
       </div>
     </button>
   );
 }
 
-// ── Generated Content Display ───────────────────────────────────
-function ContentResult({ content, format }: { content: GeneratedContent; format: Format }) {
+// ── Content Result ─────────────────────────────────────────────
+function ContentResult({ format }: { format: Format }) {
+  const { result } = useContentStore();
   const [copied,     setCopied]     = useState(false);
   const [slideIndex, setSlideIndex] = useState(0);
 
+  if (!result) return null;
+
+  const totalSlides   = result.slides?.length ?? 0;
+  const currentSlide  = result.slides?.[slideIndex];
+
   const copyText = () => {
     let text = '';
-    if (format === 'carousel' && content.slides) {
-      text = content.slides.map((s, i) => `Slide ${i + 1}:\n${s.headline}\n${s.body}`).join('\n\n');
-      text += `\n\n${content.caption ?? ''}\n\n${content.cta ?? ''}\n\n${content.hashtags?.map(h => `#${h}`).join(' ')}`;
+    if (format === 'carousel' && result.slides) {
+      text = result.slides.map((s, i) => `Slide ${i + 1}:\n${s.headline}\n${s.body}`).join('\n\n');
+      text += `\n\n${result.caption ?? ''}\n\n${result.cta ?? ''}\n\n${result.hashtags?.map(h => `#${h}`).join(' ')}`;
     } else {
-      text = `${content.hook ?? ''}\n\n${content.caption ?? ''}\n\n${content.cta ?? ''}\n\n${content.hashtags?.map(h => `#${h}`).join(' ')}`;
+      text = `${result.hook ?? ''}\n\n${result.caption ?? ''}\n\n${result.cta ?? ''}\n\n${result.hashtags?.map(h => `#${h}`).join(' ')}`;
     }
     navigator.clipboard.writeText(text);
     setCopied(true);
@@ -149,35 +142,27 @@ function ContentResult({ content, format }: { content: GeneratedContent; format:
   };
 
   const downloadImage = () => {
-    if (!content.imageUrl) return;
+    if (!result.imageUrl) return;
     const a = document.createElement('a');
-    a.href = content.imageUrl;
-    a.download = `marketgrow-${content.product?.title?.slice(0, 30).replace(/\s+/g, '-')}.png`;
+    a.href = result.imageUrl;
+    a.download = `marketgrow-${(result.product?.title ?? 'product').slice(0, 30).replace(/\s+/g, '-')}.png`;
     a.click();
   };
-
-  const totalSlides = content.slides?.length ?? 0;
-  const currentSlide = content.slides?.[slideIndex];
 
   return (
     <div className="bg-slate-800/50 border border-slate-700/50 rounded-2xl overflow-hidden">
 
       {/* Beeld */}
       <div className="aspect-square bg-slate-900 relative">
-        {content.imageUrl ? (
-          <img
-            src={content.imageUrl}
-            alt={content.product?.title}
-            className="w-full h-full object-cover"
-          />
+        {result.imageUrl ? (
+          <img src={result.imageUrl} alt="Generated" className="w-full h-full object-cover" />
         ) : (
           <div className="w-full h-full flex flex-col items-center justify-center gap-2 text-slate-600">
             <ImageIcon className="w-10 h-10" />
-            <p className="text-xs">No image generated</p>
+            <p className="text-xs">Geen beeld gegenereerd</p>
           </div>
         )}
 
-        {/* Carousel navigator */}
         {format === 'carousel' && totalSlides > 1 && (
           <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-1.5">
             {Array.from({ length: totalSlides }).map((_, i) => (
@@ -190,7 +175,7 @@ function ContentResult({ content, format }: { content: GeneratedContent; format:
           </div>
         )}
 
-        {content.imageUrl && (
+        {result.imageUrl && (
           <button
             onClick={downloadImage}
             className="absolute top-3 right-3 w-8 h-8 rounded-lg bg-black/50 backdrop-blur flex items-center justify-center text-white hover:bg-black/70 transition-colors"
@@ -200,19 +185,27 @@ function ContentResult({ content, format }: { content: GeneratedContent; format:
         )}
       </div>
 
-      {/* Content */}
+      {/* Tekst content */}
       <div className="p-5">
 
-        {/* Carousel slide content */}
+        {/* Carousel slide navigator */}
         {format === 'carousel' && currentSlide && (
           <div className="mb-4 p-3 bg-slate-900/50 rounded-lg">
             <div className="flex items-center justify-between mb-2">
               <p className="text-xs text-slate-500">Slide {slideIndex + 1} / {totalSlides}</p>
               <div className="flex gap-1">
-                <button onClick={() => setSlideIndex(Math.max(0, slideIndex - 1))} disabled={slideIndex === 0} className="w-6 h-6 rounded bg-slate-700 disabled:opacity-30 flex items-center justify-center">
+                <button
+                  onClick={() => setSlideIndex(Math.max(0, slideIndex - 1))}
+                  disabled={slideIndex === 0}
+                  className="w-6 h-6 rounded bg-slate-700 disabled:opacity-30 flex items-center justify-center"
+                >
                   <ChevronLeft className="w-3 h-3 text-slate-300" />
                 </button>
-                <button onClick={() => setSlideIndex(Math.min(totalSlides - 1, slideIndex + 1))} disabled={slideIndex === totalSlides - 1} className="w-6 h-6 rounded bg-slate-700 disabled:opacity-30 flex items-center justify-center">
+                <button
+                  onClick={() => setSlideIndex(Math.min(totalSlides - 1, slideIndex + 1))}
+                  disabled={slideIndex === totalSlides - 1}
+                  className="w-6 h-6 rounded bg-slate-700 disabled:opacity-30 flex items-center justify-center"
+                >
                   <ChevronRight className="w-3 h-3 text-slate-300" />
                 </button>
               </div>
@@ -222,31 +215,17 @@ function ContentResult({ content, format }: { content: GeneratedContent; format:
           </div>
         )}
 
-        {/* Hook */}
-        {content.hook && (
-          <p className="text-sm font-semibold text-white mb-2">{content.hook}</p>
-        )}
+        {result.hook    && <p className="text-sm font-semibold text-white mb-2">{result.hook}</p>}
+        {result.caption && <p className="text-sm text-slate-300 mb-3 leading-relaxed whitespace-pre-line">{result.caption}</p>}
+        {result.cta     && <p className="text-sm font-semibold text-brand-400 mb-3">{result.cta}</p>}
 
-        {/* Caption */}
-        {content.caption && (
-          <p className="text-sm text-slate-300 mb-3 leading-relaxed whitespace-pre-line">{content.caption}</p>
-        )}
-
-        {/* CTA */}
-        {content.cta && (
-          <p className="text-sm font-semibold text-brand-400 mb-3">{content.cta}</p>
-        )}
-
-        {/* Hashtags */}
-        {content.hashtags?.length > 0 && (
+        {result.hashtags?.length > 0 && (
           <div className="flex flex-wrap gap-1 mb-4">
-            {content.hashtags.slice(0, 8).map(tag => (
-              <span key={tag} className="text-xs text-slate-500 bg-slate-700/50 px-2 py-0.5 rounded">
-                #{tag}
-              </span>
+            {result.hashtags.slice(0, 8).map(tag => (
+              <span key={tag} className="text-xs text-slate-500 bg-slate-700/50 px-2 py-0.5 rounded">#{tag}</span>
             ))}
-            {content.hashtags.length > 8 && (
-              <span className="text-xs text-slate-600">+{content.hashtags.length - 8} more</span>
+            {result.hashtags.length > 8 && (
+              <span className="text-xs text-slate-600">+{result.hashtags.length - 8}</span>
             )}
           </div>
         )}
@@ -260,30 +239,35 @@ function ContentResult({ content, format }: { content: GeneratedContent; format:
           }`}
         >
           {copied ? <CheckCircle className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-          {copied ? 'Copied!' : 'Copy caption + hashtags'}
+          {copied ? 'Gekopieerd!' : 'Kopieer caption + hashtags'}
         </button>
       </div>
     </div>
   );
 }
 
-// ── Main Page ───────────────────────────────────────────────────
+// ── Main Page ──────────────────────────────────────────────────
 export default function SocialContentPage() {
   const [products,     setProducts]     = useState<Product[]>([]);
   const [loadingProds, setLoadingProds] = useState(true);
   const [search,       setSearch]       = useState('');
   const [selectedProd, setSelectedProd] = useState<Product | null>(null);
+  const [platform,     setPlatform]     = useState<Platform>('instagram');
+  const [format,       setFormat]       = useState<Format>('single');
+  const [tone,         setTone]         = useState<Tone>('lifestyle');
+  const [language,     setLanguage]     = useState<Language>('nl');
+  const [withImage,    setWithImage]    = useState(true);
 
-  const [platform,  setPlatform]  = useState<Platform>('instagram');
-  const [format,    setFormat]    = useState<Format>('single');
-  const [tone,      setTone]      = useState<Tone>('lifestyle');
-  const [language,  setLanguage]  = useState<Language>('nl');
-  const [withImage, setWithImage] = useState(true);
+  // Globale store — overleeft navigatie
+  const {
+    status, result, error,
+    startGeneration, setResult, setError, reset,
+  } = useContentStore();
 
-  const [loading,  setLoading]  = useState(false);
-  const [result,   setResult]   = useState<GeneratedContent | null>(null);
-  const [error,    setError]    = useState('');
+  const isGenerating = status === 'generating';
+  const isDone       = status === 'done';
 
+  // Producten laden met debounce op zoekterm
   const loadProducts = useCallback(async () => {
     setLoadingProds(true);
     try {
@@ -300,23 +284,26 @@ export default function SocialContentPage() {
 
   const generate = async () => {
     if (!selectedProd) return;
-    setLoading(true);
-    setError('');
-    setResult(null);
+
+    // startGeneration geeft een uniek ID terug voor déze generatie
+    // Als de gebruiker opnieuw genereert, krijgt de nieuwe call een hoger ID
+    // setResult/setError checken dit ID en negeren verouderde resultaten
+    const genId = startGeneration({
+      productId:     selectedProd.id,
+      productTitle:  selectedProd.title,
+      platform, format, tone, language,
+      generateImage: withImage,
+    });
+
     try {
       const res = await api.post('/ai/product-content', {
-        productId:    selectedProd.id,
-        platform,
-        format,
-        tone,
-        language,
+        productId:     selectedProd.id,
+        platform, format, tone, language,
         generateImage: withImage,
       });
-      setResult(res.data);
+      setResult(res.data, genId);
     } catch (e: any) {
-      setError(e.response?.data?.error ?? 'Something went wrong.');
-    } finally {
-      setLoading(false);
+      setError(e.response?.data?.error ?? 'Er ging iets mis.', genId);
     }
   };
 
@@ -335,6 +322,14 @@ export default function SocialContentPage() {
           Maak marketing content voor je producten — met AI-gegenereerde visuals en captions.
         </p>
       </div>
+
+      {/* Achtergrond-generatie banner — zichtbaar als je terugkomt */}
+      {isGenerating && !selectedProd && (
+        <div className="mb-6 flex items-center gap-3 px-4 py-3 bg-purple-500/10 border border-purple-500/30 rounded-xl text-purple-300 text-sm">
+          <Loader2 className="w-4 h-4 animate-spin flex-shrink-0" />
+          Bezig met genereren op de achtergrond...
+        </div>
+      )}
 
       <div className="grid lg:grid-cols-5 gap-6">
 
@@ -392,7 +387,7 @@ export default function SocialContentPage() {
                     platform === p.id ? 'bg-brand-600 text-white' : 'bg-slate-700 text-slate-400 hover:text-white'
                   }`}
                 >
-                  <span>{p.icon}</span> {p.label}
+                  <span>{p.icon}</span>{p.label}
                 </button>
               ))}
             </div>
@@ -434,16 +429,14 @@ export default function SocialContentPage() {
                     }`}
                   >
                     <div>{t.label}</div>
-                    <div className="text-xs opacity-70 mt-0.5">{t.desc}</div>
+                    <div className="opacity-70 mt-0.5">{t.desc}</div>
                   </button>
                 ))}
               </div>
             </div>
 
             <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-medium text-white">Taal</p>
-              </div>
+              <p className="text-xs font-medium text-white">Taal</p>
               <div className="flex gap-2">
                 {(['nl', 'en'] as Language[]).map(l => (
                   <button
@@ -468,33 +461,53 @@ export default function SocialContentPage() {
                 onClick={() => setWithImage(!withImage)}
                 className={`w-10 h-5 rounded-full transition-all relative ${withImage ? 'bg-brand-600' : 'bg-slate-700'}`}
               >
-                <div className="w-4 h-4 bg-white rounded-full absolute top-0.5 transition-all" style={{ left: withImage ? '22px' : '2px' }} />
+                <div
+                  className="w-4 h-4 bg-white rounded-full absolute top-0.5 transition-all"
+                  style={{ left: withImage ? '22px' : '2px' }}
+                />
               </button>
             </div>
           </div>
 
-          {/* Generate knop */}
-          <button
-            onClick={generate}
-            disabled={loading || !selectedProd}
-            className="w-full bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 disabled:opacity-50 text-white font-semibold py-3.5 rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg"
-          >
-            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-            {loading
-              ? 'Genereren...'
-              : selectedProd
-              ? `Genereer voor "${selectedProd.title.slice(0, 22)}${selectedProd.title.length > 22 ? '...' : ''}"`
-              : 'Selecteer een product'}
-          </button>
+          {/* Genereer / Opnieuw */}
+          <div className="space-y-2">
+            <button
+              onClick={generate}
+              disabled={isGenerating || !selectedProd}
+              className="w-full bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 disabled:opacity-50 text-white font-semibold py-3.5 rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg"
+            >
+              {isGenerating
+                ? <><Loader2 className="w-4 h-4 animate-spin" /> Genereren...</>
+                : <><Sparkles className="w-4 h-4" />
+                  {selectedProd
+                    ? `Genereer voor "${selectedProd.title.slice(0, 20)}${selectedProd.title.length > 20 ? '...' : ''}"`
+                    : 'Selecteer een product'
+                  }
+                </>
+              }
+            </button>
 
-          {error && (
-            <p className="text-xs text-rose-400 text-center">{error}</p>
-          )}
+            {/* Opnieuw genereren — alleen zichtbaar als er al een resultaat is */}
+            {isDone && !isGenerating && (
+              <button
+                onClick={generate}
+                disabled={!selectedProd}
+                className="w-full bg-slate-700 hover:bg-slate-600 disabled:opacity-50 text-slate-300 text-sm font-medium py-2.5 rounded-xl transition-all flex items-center justify-center gap-2"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                Opnieuw genereren
+              </button>
+            )}
+
+            {error && status === 'error' && (
+              <p className="text-xs text-rose-400 text-center">{error}</p>
+            )}
+          </div>
         </div>
 
         {/* ── Rechts: resultaat ── */}
         <div className="lg:col-span-3">
-          {loading ? (
+          {isGenerating ? (
             <div className="h-full min-h-96 flex flex-col items-center justify-center gap-4 bg-slate-800/30 rounded-2xl border border-slate-700/50">
               <Loader2 className="w-8 h-8 animate-spin text-brand-400" />
               <p className="text-slate-400 text-sm">
@@ -502,12 +515,12 @@ export default function SocialContentPage() {
               </p>
               {withImage && (
                 <p className="text-xs text-slate-600 max-w-xs text-center">
-                  Het genereren van een AI beeld kan 15-30 seconden duren.
+                  AI beeld genereren duurt 15–30 seconden.
                 </p>
               )}
             </div>
-          ) : result ? (
-            <ContentResult content={result} format={format} />
+          ) : isDone && result ? (
+            <ContentResult format={format} />
           ) : (
             <div className="h-full min-h-96 flex flex-col items-center justify-center gap-3 bg-slate-800/30 rounded-2xl border border-dashed border-slate-700/50 text-center px-8">
               <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-pink-500/20 to-purple-600/20 border border-pink-500/30 flex items-center justify-center">
