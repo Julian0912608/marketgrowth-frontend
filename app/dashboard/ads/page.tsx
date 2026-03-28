@@ -190,16 +190,24 @@ function PlatformBlock({ group, onSync, syncing }: {
 
 // ── Main Page ───────────────────────────────────────────────────
 export default function AdsPage() {
-  const [campaigns,  setCampaigns]  = useState<Campaign[]>([]);
-  const [loading,    setLoading]    = useState(true);
-  const [syncing,    setSyncing]    = useState<string | null>(null);
-  const [noData,     setNoData]     = useState(false);
-  const [period,     setPeriod]     = useState('30d');
+  const [campaigns,   setCampaigns]   = useState<Campaign[]>([]);
+  const [loading,     setLoading]     = useState(true);
+  const [syncing,     setSyncing]     = useState<string | null>(null);
+  const [noData,      setNoData]      = useState(false);
+  const [period,      setPeriod]      = useState('30d');
+  const [customFrom,  setCustomFrom]  = useState('');
+  const [customTo,    setCustomTo]    = useState('');
+  const [showCustom,  setShowCustom]  = useState(false);
+  const [syncError,   setSyncError]   = useState('');
+  const [syncSuccess, setSyncSuccess] = useState('');
 
-  const load = async () => {
+  const load = async (p = period, from = customFrom, to = customTo) => {
     setLoading(true);
     try {
-      const res = await api.get(`/analytics/ads?period=${period}`);
+      const params = p === 'custom' && from && to
+        ? `period=custom&from=${from}&to=${to}`
+        : `period=${p}`;
+      const res = await api.get(`/analytics/ads?${params}`);
       const data = res.data.campaigns ?? [];
       setCampaigns(data);
       setNoData(data.length === 0);
@@ -209,17 +217,33 @@ export default function AdsPage() {
     setLoading(false);
   };
 
-  useEffect(() => { load(); }, [period]);
+  useEffect(() => {
+    if (period !== 'custom') load(period);
+  }, [period]);
+
+  const handlePeriod = (p: string) => {
+    setPeriod(p);
+    setShowCustom(p === 'custom');
+    if (p !== 'custom') load(p);
+  };
+
+  const handleCustomApply = () => {
+    if (customFrom && customTo) load('custom', customFrom, customTo);
+  };
 
   const handleSync = async (platform: string) => {
     setSyncing(platform);
+    setSyncError('');
+    setSyncSuccess('');
     try {
       if (platform === 'bolcom_ads') {
-        await api.post('/integrations/advertising/bolcom/sync');
+        const res = await api.post('/integrations/advertising/bolcom/sync');
+        setSyncSuccess(`Sync geslaagd: ${res.data.campaigns ?? 0} campagnes bijgewerkt`);
+        await load();
       }
-      // Google Ads sync gaat via de scheduler — geen aparte sync endpoint
-      await load();
-    } catch {}
+    } catch (e: any) {
+      setSyncError(e.response?.data?.error ?? 'Sync mislukt');
+    }
     setSyncing(null);
   };
 
@@ -257,35 +281,76 @@ export default function AdsPage() {
   const grandRoas    = grandSpend > 0 ? grandRevenue / grandSpend : 0;
   const grandClicks  = platformGroups.reduce((s, g) => s + g.totalClicks, 0);
 
-  const PERIODS = [
-    { id: '7d',  label: '7d' },
-    { id: '30d', label: '30d' },
-    { id: '90d', label: '90d' },
-  ];
-
   return (
     <div className="p-6 max-w-7xl mx-auto">
 
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
         <div>
           <h1 className="font-display text-2xl font-800 text-white mb-1">Advertising</h1>
           <p className="text-slate-400 text-sm">Alle advertentiekanalen gecombineerd</p>
         </div>
-        <div className="flex items-center gap-2 bg-slate-800/80 border border-slate-700/50 rounded-xl p-1">
-          {PERIODS.map(p => (
-            <button
-              key={p.id}
-              onClick={() => setPeriod(p.id)}
-              className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all ${
-                period === p.id ? 'bg-brand-600 text-white' : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              {p.label}
-            </button>
-          ))}
+        <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-1 bg-slate-800/80 border border-slate-700/50 rounded-xl p-1">
+            {[
+              { id: '7d',     label: '7d' },
+              { id: '30d',    label: '30d' },
+              { id: '90d',    label: '90d' },
+              { id: 'custom', label: 'Custom' },
+            ].map(p => (
+              <button
+                key={p.id}
+                onClick={() => handlePeriod(p.id)}
+                className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all ${
+                  period === p.id ? 'bg-brand-600 text-white' : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                {p.label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
+
+      {/* Custom date range */}
+      {showCustom && (
+        <div className="flex items-center gap-3 mb-6 flex-wrap">
+          <input
+            type="date"
+            value={customFrom}
+            onChange={e => setCustomFrom(e.target.value)}
+            className="bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-brand-500"
+          />
+          <span className="text-slate-500 text-sm">tot</span>
+          <input
+            type="date"
+            value={customTo}
+            onChange={e => setCustomTo(e.target.value)}
+            className="bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-brand-500"
+          />
+          <button
+            onClick={handleCustomApply}
+            disabled={!customFrom || !customTo}
+            className="bg-brand-600 hover:bg-brand-700 disabled:opacity-50 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+          >
+            Toepassen
+          </button>
+        </div>
+      )}
+
+      {/* Sync feedback */}
+      {syncSuccess && (
+        <div className="mb-4 flex items-center gap-2 px-4 py-3 bg-emerald-500/20 border border-emerald-500/30 rounded-xl text-emerald-300 text-sm">
+          {syncSuccess}
+          <button onClick={() => setSyncSuccess('')} className="ml-auto text-emerald-400 hover:text-white">×</button>
+        </div>
+      )}
+      {syncError && (
+        <div className="mb-4 flex items-center gap-2 px-4 py-3 bg-rose-500/20 border border-rose-500/30 rounded-xl text-rose-300 text-sm">
+          {syncError}
+          <button onClick={() => setSyncError('')} className="ml-auto text-rose-400 hover:text-white">×</button>
+        </div>
+      )}
 
       {loading ? (
         <div className="flex items-center justify-center h-64">
