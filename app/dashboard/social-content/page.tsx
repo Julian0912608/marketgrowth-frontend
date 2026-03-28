@@ -217,6 +217,7 @@ export default function SocialContentPage() {
   const [tone,          setTone]          = useState<Tone>('lifestyle');
   const [language,      setLanguage]      = useState<Language>('nl');
   const [withImage,     setWithImage]     = useState(true);
+  const [imageMode,     setImageMode]     = useState<'keep' | 'generate'>('keep'); // bij uploadMode
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { status, result, error, startGeneration, setResult, setError, reset } = useContentStore();
@@ -299,8 +300,12 @@ export default function SocialContentPage() {
         res = await api.post('/ai/product-content-from-image', {
           imageBase64:  uploadedImage.base64,
           platform, format, tone, language,
-          generateImage: withImage,
+          generateImage: uploadMode && imageMode === 'generate' ? withImage : false,
         });
+        // Bij 'keep' modus: gebruik de geüploade foto als imageUrl
+        if (imageMode === 'keep' && uploadedImage.preview) {
+          res.data.imageUrl = uploadedImage.preview;
+        }
       } else {
         // Genereer content op basis van geselecteerd product
         res = await api.post('/ai/product-content', {
@@ -506,16 +511,29 @@ export default function SocialContentPage() {
 
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs font-medium text-white">AI marketing beeld</p>
+                <p className="text-xs font-medium text-white">Beeld</p>
                 <p className="text-xs text-slate-500">
-                  {uploadMode ? 'Gebaseerd op geüploade foto' : 'Genereert een productafbeelding'}
+                  {uploadMode ? 'Welk beeld gebruiken?' : 'Genereert een productafbeelding'}
                 </p>
               </div>
-              <button onClick={() => setWithImage(!withImage)}
-                className={`w-10 h-5 rounded-full transition-all relative ${withImage ? 'bg-brand-600' : 'bg-slate-700'}`}>
-                <div className="w-4 h-4 bg-white rounded-full absolute top-0.5 transition-all"
-                  style={{ left: withImage ? '22px' : '2px' }} />
-              </button>
+              {uploadMode ? (
+                <div className="flex gap-1">
+                  <button onClick={() => setImageMode('keep')}
+                    className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all ${imageMode === 'keep' ? 'bg-brand-600 text-white' : 'bg-slate-700 text-slate-400'}`}>
+                    Foto
+                  </button>
+                  <button onClick={() => setImageMode('generate')}
+                    className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all ${imageMode === 'generate' ? 'bg-brand-600 text-white' : 'bg-slate-700 text-slate-400'}`}>
+                    AI
+                  </button>
+                </div>
+              ) : (
+                <button onClick={() => setWithImage(!withImage)}
+                  className={`w-10 h-5 rounded-full transition-all relative ${withImage ? 'bg-brand-600' : 'bg-slate-700'}`}>
+                  <div className="w-4 h-4 bg-white rounded-full absolute top-0.5 transition-all"
+                    style={{ left: withImage ? '22px' : '2px' }} />
+                </button>
+              )}
             </div>
           </div>
 
