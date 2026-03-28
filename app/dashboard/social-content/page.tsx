@@ -1,32 +1,27 @@
 'use client';
 
 // app/dashboard/social-content/page.tsx
-// Globale generatie via Zustand contentStore.
-// - Blijft doordraaien bij navigatie naar andere pagina
-// - Opnieuw genereren begint altijd vanaf 0 (reset + nieuwe generatie-ID)
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Sparkles, Search, Loader2, Image as ImageIcon,
   Layers, BookOpen, Copy, CheckCircle,
   ChevronLeft, ChevronRight, Download, TrendingUp, Package,
+  Upload, X,
 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useContentStore } from '@/lib/contentStore';
 
 // ── Types ──────────────────────────────────────────────────────
 interface Product {
-  id:           string;
-  title:        string;
-  ean:          string | null;
-  imageUrl:     string | null;
-  priceMin:     number | null;
-  priceMax:     number | null;
-  inventory:    number;
-  platform:     string;
-  shopName:     string;
-  revenue30d:   number;
-  units30d:     number;
+  id:        string;
+  title:     string;
+  ean:       string | null;
+  imageUrl:  string | null;
+  priceMin:  number | null;
+  platform:  string;
+  revenue30d: number;
+  units30d:  number;
 }
 
 type Platform = 'instagram' | 'tiktok' | 'facebook' | 'pinterest';
@@ -34,25 +29,24 @@ type Format   = 'single' | 'carousel' | 'story';
 type Tone     = 'lifestyle' | 'promotional' | 'educational' | 'ugc';
 type Language = 'nl' | 'en';
 
-// ── Config ─────────────────────────────────────────────────────
-const PLATFORMS: { id: Platform; label: string; icon: string }[] = [
-  { id: 'instagram', label: 'Instagram', icon: '📸' },
-  { id: 'tiktok',    label: 'TikTok',    icon: '🎵' },
-  { id: 'facebook',  label: 'Facebook',  icon: '👍' },
-  { id: 'pinterest', label: 'Pinterest', icon: '📌' },
+const PLATFORMS = [
+  { id: 'instagram' as Platform, label: 'Instagram', icon: '📸' },
+  { id: 'tiktok'    as Platform, label: 'TikTok',    icon: '🎵' },
+  { id: 'facebook'  as Platform, label: 'Facebook',  icon: '👍' },
+  { id: 'pinterest' as Platform, label: 'Pinterest', icon: '📌' },
 ];
 
-const FORMATS: { id: Format; label: string; desc: string; icon: any }[] = [
-  { id: 'single',   label: 'Single post',  desc: 'Eén impactvolle post',  icon: ImageIcon },
-  { id: 'carousel', label: 'Carousel',     desc: 'Meerdere slides',       icon: Layers },
-  { id: 'story',    label: 'Story',        desc: 'Verticaal formaat',     icon: BookOpen },
+const FORMATS = [
+  { id: 'single'   as Format, label: 'Single post', desc: 'Eén impactvolle post',  icon: ImageIcon },
+  { id: 'carousel' as Format, label: 'Carousel',    desc: 'Meerdere slides',       icon: Layers },
+  { id: 'story'    as Format, label: 'Story',       desc: 'Verticaal formaat',     icon: BookOpen },
 ];
 
-const TONES: { id: Tone; label: string; desc: string }[] = [
-  { id: 'lifestyle',   label: 'Lifestyle',    desc: 'Aspirationeel & warm' },
-  { id: 'promotional', label: 'Promotioneel', desc: 'Sales-gericht, urgentie' },
-  { id: 'educational', label: 'Educatief',    desc: 'Informerend & betrouwbaar' },
-  { id: 'ugc',         label: 'UGC-stijl',    desc: 'Authentiek, eerste persoon' },
+const TONES = [
+  { id: 'lifestyle'   as Tone, label: 'Lifestyle',    desc: 'Aspirationeel & warm' },
+  { id: 'promotional' as Tone, label: 'Promotioneel', desc: 'Sales-gericht' },
+  { id: 'educational' as Tone, label: 'Educatief',    desc: 'Informerend' },
+  { id: 'ugc'         as Tone, label: 'UGC-stijl',    desc: 'Authentiek' },
 ];
 
 const PLATFORM_COLORS: Record<string, string> = {
@@ -75,20 +69,14 @@ function ProductCard({ product, selected, onSelect }: {
     <button
       onClick={onSelect}
       className={`w-full text-left p-3 rounded-xl border transition-all ${
-        selected
-          ? 'border-brand-500 bg-brand-600/10'
-          : 'border-slate-700/50 bg-slate-800/30 hover:border-slate-600'
+        selected ? 'border-brand-500 bg-brand-600/10' : 'border-slate-700/50 bg-slate-800/30 hover:border-slate-600'
       }`}
     >
       <div className="flex items-center gap-3">
         <div className="w-12 h-12 rounded-lg bg-slate-700 flex-shrink-0 overflow-hidden">
           {product.imageUrl ? (
-            <img
-              src={product.imageUrl}
-              alt={product.title}
-              className="w-full h-full object-cover"
-              onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
-            />
+            <img src={product.imageUrl} alt={product.title} className="w-full h-full object-cover"
+              onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
           ) : (
             <div className="w-full h-full flex items-center justify-center">
               <Package className="w-5 h-5 text-slate-500" />
@@ -101,9 +89,7 @@ function ProductCard({ product, selected, onSelect }: {
             <span className={`text-xs px-1.5 py-0.5 rounded border ${PLATFORM_COLORS[product.platform] ?? 'bg-slate-700 text-slate-400 border-slate-600'}`}>
               {product.platform}
             </span>
-            {product.priceMin && (
-              <span className="text-xs text-slate-500">{formatEur(product.priceMin)}</span>
-            )}
+            {product.priceMin && <span className="text-xs text-slate-500">{formatEur(product.priceMin)}</span>}
             {product.units30d > 0 && (
               <span className="text-xs text-emerald-400 flex items-center gap-1">
                 <TrendingUp className="w-3 h-3" />{product.units30d}×
@@ -125,8 +111,8 @@ function ContentResult({ format }: { format: Format }) {
 
   if (!result) return null;
 
-  const totalSlides   = result.slides?.length ?? 0;
-  const currentSlide  = result.slides?.[slideIndex];
+  const totalSlides  = result.slides?.length ?? 0;
+  const currentSlide = result.slides?.[slideIndex];
 
   const copyText = () => {
     let text = '';
@@ -151,8 +137,6 @@ function ContentResult({ format }: { format: Format }) {
 
   return (
     <div className="bg-slate-800/50 border border-slate-700/50 rounded-2xl overflow-hidden">
-
-      {/* Beeld */}
       <div className="aspect-square bg-slate-900 relative">
         {result.imageUrl ? (
           <img src={result.imageUrl} alt="Generated" className="w-full h-full object-cover" />
@@ -162,50 +146,33 @@ function ContentResult({ format }: { format: Format }) {
             <p className="text-xs">Geen beeld gegenereerd</p>
           </div>
         )}
-
         {format === 'carousel' && totalSlides > 1 && (
           <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-1.5">
             {Array.from({ length: totalSlides }).map((_, i) => (
-              <button
-                key={i}
-                onClick={() => setSlideIndex(i)}
-                className={`rounded-full transition-all ${i === slideIndex ? 'w-4 h-1.5 bg-white' : 'w-1.5 h-1.5 bg-white/50'}`}
-              />
+              <button key={i} onClick={() => setSlideIndex(i)}
+                className={`rounded-full transition-all ${i === slideIndex ? 'w-4 h-1.5 bg-white' : 'w-1.5 h-1.5 bg-white/50'}`} />
             ))}
           </div>
         )}
-
         {result.imageUrl && (
-          <button
-            onClick={downloadImage}
-            className="absolute top-3 right-3 w-8 h-8 rounded-lg bg-black/50 backdrop-blur flex items-center justify-center text-white hover:bg-black/70 transition-colors"
-          >
+          <button onClick={downloadImage}
+            className="absolute top-3 right-3 w-8 h-8 rounded-lg bg-black/50 backdrop-blur flex items-center justify-center text-white hover:bg-black/70 transition-colors">
             <Download className="w-3.5 h-3.5" />
           </button>
         )}
       </div>
-
-      {/* Tekst content */}
       <div className="p-5">
-
-        {/* Carousel slide navigator */}
         {format === 'carousel' && currentSlide && (
           <div className="mb-4 p-3 bg-slate-900/50 rounded-lg">
             <div className="flex items-center justify-between mb-2">
               <p className="text-xs text-slate-500">Slide {slideIndex + 1} / {totalSlides}</p>
               <div className="flex gap-1">
-                <button
-                  onClick={() => setSlideIndex(Math.max(0, slideIndex - 1))}
-                  disabled={slideIndex === 0}
-                  className="w-6 h-6 rounded bg-slate-700 disabled:opacity-30 flex items-center justify-center"
-                >
+                <button onClick={() => setSlideIndex(Math.max(0, slideIndex - 1))} disabled={slideIndex === 0}
+                  className="w-6 h-6 rounded bg-slate-700 disabled:opacity-30 flex items-center justify-center">
                   <ChevronLeft className="w-3 h-3 text-slate-300" />
                 </button>
-                <button
-                  onClick={() => setSlideIndex(Math.min(totalSlides - 1, slideIndex + 1))}
-                  disabled={slideIndex === totalSlides - 1}
-                  className="w-6 h-6 rounded bg-slate-700 disabled:opacity-30 flex items-center justify-center"
-                >
+                <button onClick={() => setSlideIndex(Math.min(totalSlides - 1, slideIndex + 1))} disabled={slideIndex === totalSlides - 1}
+                  className="w-6 h-6 rounded bg-slate-700 disabled:opacity-30 flex items-center justify-center">
                   <ChevronRight className="w-3 h-3 text-slate-300" />
                 </button>
               </div>
@@ -214,30 +181,21 @@ function ContentResult({ format }: { format: Format }) {
             <p className="text-xs text-slate-400">{currentSlide.body}</p>
           </div>
         )}
-
         {result.hook    && <p className="text-sm font-semibold text-white mb-2">{result.hook}</p>}
         {result.caption && <p className="text-sm text-slate-300 mb-3 leading-relaxed whitespace-pre-line">{result.caption}</p>}
         {result.cta     && <p className="text-sm font-semibold text-brand-400 mb-3">{result.cta}</p>}
-
         {result.hashtags?.length > 0 && (
           <div className="flex flex-wrap gap-1 mb-4">
             {result.hashtags.slice(0, 8).map(tag => (
               <span key={tag} className="text-xs text-slate-500 bg-slate-700/50 px-2 py-0.5 rounded">#{tag}</span>
             ))}
-            {result.hashtags.length > 8 && (
-              <span className="text-xs text-slate-600">+{result.hashtags.length - 8}</span>
-            )}
+            {result.hashtags.length > 8 && <span className="text-xs text-slate-600">+{result.hashtags.length - 8}</span>}
           </div>
         )}
-
-        <button
-          onClick={copyText}
+        <button onClick={copyText}
           className={`w-full py-2 rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-1.5 ${
-            copied
-              ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-              : 'bg-slate-700 hover:bg-slate-600 text-slate-300'
-          }`}
-        >
+            copied ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-slate-700 hover:bg-slate-600 text-slate-300'
+          }`}>
           {copied ? <CheckCircle className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
           {copied ? 'Gekopieerd!' : 'Kopieer caption + hashtags'}
         </button>
@@ -248,26 +206,23 @@ function ContentResult({ format }: { format: Format }) {
 
 // ── Main Page ──────────────────────────────────────────────────
 export default function SocialContentPage() {
-  const [products,     setProducts]     = useState<Product[]>([]);
-  const [loadingProds, setLoadingProds] = useState(true);
-  const [search,       setSearch]       = useState('');
-  const [selectedProd, setSelectedProd] = useState<Product | null>(null);
-  const [platform,     setPlatform]     = useState<Platform>('instagram');
-  const [format,       setFormat]       = useState<Format>('single');
-  const [tone,         setTone]         = useState<Tone>('lifestyle');
-  const [language,     setLanguage]     = useState<Language>('nl');
-  const [withImage,    setWithImage]    = useState(true);
+  const [products,      setProducts]      = useState<Product[]>([]);
+  const [loadingProds,  setLoadingProds]  = useState(true);
+  const [search,        setSearch]        = useState('');
+  const [selectedProd,  setSelectedProd]  = useState<Product | null>(null);
+  const [uploadedImage, setUploadedImage] = useState<{ base64: string; preview: string } | null>(null);
+  const [uploadMode,    setUploadMode]    = useState(false); // false = product kiezen, true = foto uploaden
+  const [platform,      setPlatform]      = useState<Platform>('instagram');
+  const [format,        setFormat]        = useState<Format>('single');
+  const [tone,          setTone]          = useState<Tone>('lifestyle');
+  const [language,      setLanguage]      = useState<Language>('nl');
+  const [withImage,     setWithImage]     = useState(true);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Globale store — overleeft navigatie
-  const {
-    status, result, error,
-    startGeneration, setResult, setError, reset,
-  } = useContentStore();
-
+  const { status, result, error, startGeneration, setResult, setError, reset } = useContentStore();
   const isGenerating = status === 'generating';
   const isDone       = status === 'done';
 
-  // Producten laden met debounce op zoekterm
   const loadProducts = useCallback(async () => {
     setLoadingProds(true);
     try {
@@ -282,30 +237,56 @@ export default function SocialContentPage() {
     return () => clearTimeout(t);
   }, [loadProducts]);
 
-  const generate = async () => {
-    if (!selectedProd) return;
+  // Foto upload handler
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const base64Full = ev.target?.result as string;
+      const base64 = base64Full.split(',')[1]; // strip data:image/...;base64,
+      setUploadedImage({ base64, preview: base64Full });
+    };
+    reader.readAsDataURL(file);
+  };
 
-    // startGeneration geeft een uniek ID terug voor déze generatie
-    // Als de gebruiker opnieuw genereert, krijgt de nieuwe call een hoger ID
-    // setResult/setError checken dit ID en negeren verouderde resultaten
+  const generate = async () => {
+    const canGenerate = uploadMode ? !!uploadedImage : !!selectedProd;
+    if (!canGenerate) return;
+
     const genId = startGeneration({
-      productId:     selectedProd.id,
-      productTitle:  selectedProd.title,
+      productId:     selectedProd?.id ?? 'uploaded',
+      productTitle:  selectedProd?.title ?? 'Geüpload product',
       platform, format, tone, language,
       generateImage: withImage,
     });
 
     try {
-      const res = await api.post('/ai/product-content', {
-        productId:     selectedProd.id,
-        platform, format, tone, language,
-        generateImage: withImage,
-      });
+      let res;
+
+      if (uploadMode && uploadedImage) {
+        // Genereer content op basis van geüploade foto
+        res = await api.post('/ai/product-content-from-image', {
+          imageBase64:  uploadedImage.base64,
+          platform, format, tone, language,
+          generateImage: withImage,
+        });
+      } else {
+        // Genereer content op basis van geselecteerd product
+        res = await api.post('/ai/product-content', {
+          productId:     selectedProd!.id,
+          platform, format, tone, language,
+          generateImage: withImage,
+        });
+      }
+
       setResult(res.data, genId);
     } catch (e: any) {
       setError(e.response?.data?.error ?? 'Er ging iets mis.', genId);
     }
   };
+
+  const canGenerate = uploadMode ? !!uploadedImage : !!selectedProd;
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
@@ -323,8 +304,7 @@ export default function SocialContentPage() {
         </p>
       </div>
 
-      {/* Achtergrond-generatie banner — zichtbaar als je terugkomt */}
-      {isGenerating && !selectedProd && (
+      {isGenerating && !canGenerate && (
         <div className="mb-6 flex items-center gap-3 px-4 py-3 bg-purple-500/10 border border-purple-500/30 rounded-xl text-purple-300 text-sm">
           <Loader2 className="w-4 h-4 animate-spin flex-shrink-0" />
           Bezig met genereren op de achtergrond...
@@ -336,57 +316,110 @@ export default function SocialContentPage() {
         {/* ── Links: configuratie ── */}
         <div className="lg:col-span-2 space-y-5">
 
-          {/* Stap 1: Product kiezen */}
+          {/* Stap 1: Input mode toggle */}
           <div className="bg-slate-800/50 border border-slate-700/50 rounded-2xl p-5">
             <h2 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">
-              1. Kies een product
+              1. Kies invoer
             </h2>
-            <div className="relative mb-3">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-500" />
-              <input
-                type="text"
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                placeholder="Zoek op naam of EAN..."
-                className="w-full bg-slate-900 border border-slate-700 rounded-lg pl-9 pr-3 py-2 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
-              />
+            <div className="grid grid-cols-2 gap-2 mb-4">
+              <button
+                onClick={() => { setUploadMode(false); setUploadedImage(null); }}
+                className={`py-2.5 rounded-xl text-xs font-semibold transition-all flex items-center justify-center gap-2 ${
+                  !uploadMode ? 'bg-brand-600 text-white' : 'bg-slate-700 text-slate-400 hover:text-white'
+                }`}
+              >
+                <Package className="w-3.5 h-3.5" />
+                Mijn producten
+              </button>
+              <button
+                onClick={() => { setUploadMode(true); setSelectedProd(null); }}
+                className={`py-2.5 rounded-xl text-xs font-semibold transition-all flex items-center justify-center gap-2 ${
+                  uploadMode ? 'bg-brand-600 text-white' : 'bg-slate-700 text-slate-400 hover:text-white'
+                }`}
+              >
+                <Upload className="w-3.5 h-3.5" />
+                Foto uploaden
+              </button>
             </div>
-            <div className="space-y-2 max-h-64 overflow-y-auto">
-              {loadingProds ? (
-                <div className="flex justify-center py-6">
-                  <Loader2 className="w-5 h-5 animate-spin text-slate-500" />
-                </div>
-              ) : products.length === 0 ? (
-                <p className="text-xs text-slate-500 text-center py-6">
-                  {search ? 'Geen producten gevonden.' : 'Synchroniseer eerst een winkel om producten te zien.'}
-                </p>
-              ) : (
-                products.map(p => (
-                  <ProductCard
-                    key={p.id}
-                    product={p}
-                    selected={selectedProd?.id === p.id}
-                    onSelect={() => setSelectedProd(p)}
+
+            {/* Product selector */}
+            {!uploadMode && (
+              <>
+                <div className="relative mb-3">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-500" />
+                  <input
+                    type="text"
+                    value={search}
+                    onChange={e => setSearch(e.target.value)}
+                    placeholder="Zoek op naam of EAN..."
+                    className="w-full bg-slate-900 border border-slate-700 rounded-lg pl-9 pr-3 py-2 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
                   />
-                ))
-              )}
-            </div>
+                </div>
+                <div className="space-y-2 max-h-56 overflow-y-auto">
+                  {loadingProds ? (
+                    <div className="flex justify-center py-6">
+                      <Loader2 className="w-5 h-5 animate-spin text-slate-500" />
+                    </div>
+                  ) : products.length === 0 ? (
+                    <p className="text-xs text-slate-500 text-center py-6">
+                      {search ? 'Geen producten gevonden.' : 'Synchroniseer eerst een winkel.'}
+                    </p>
+                  ) : (
+                    products.map(p => (
+                      <ProductCard key={p.id} product={p}
+                        selected={selectedProd?.id === p.id}
+                        onSelect={() => setSelectedProd(p)} />
+                    ))
+                  )}
+                </div>
+              </>
+            )}
+
+            {/* Foto upload */}
+            {uploadMode && (
+              <div>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileUpload}
+                  className="hidden"
+                />
+                {uploadedImage ? (
+                  <div className="relative">
+                    <img src={uploadedImage.preview} alt="Upload preview"
+                      className="w-full h-40 object-cover rounded-xl" />
+                    <button
+                      onClick={() => { setUploadedImage(null); if (fileInputRef.current) fileInputRef.current.value = ''; }}
+                      className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/60 flex items-center justify-center text-white hover:bg-black/80"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                    <p className="text-xs text-emerald-400 mt-2 text-center">✓ Foto geladen</p>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    className="w-full h-32 border-2 border-dashed border-slate-600 hover:border-brand-500 rounded-xl flex flex-col items-center justify-center gap-2 text-slate-500 hover:text-slate-300 transition-colors"
+                  >
+                    <Upload className="w-6 h-6" />
+                    <span className="text-xs font-medium">Klik om foto te uploaden</span>
+                    <span className="text-xs opacity-60">JPG, PNG, WEBP</span>
+                  </button>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Stap 2: Platform */}
           <div className="bg-slate-800/50 border border-slate-700/50 rounded-2xl p-5">
-            <h2 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">
-              2. Platform
-            </h2>
+            <h2 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">2. Platform</h2>
             <div className="grid grid-cols-2 gap-2">
               {PLATFORMS.map(p => (
-                <button
-                  key={p.id}
-                  onClick={() => setPlatform(p.id)}
+                <button key={p.id} onClick={() => setPlatform(p.id)}
                   className={`py-2 rounded-lg text-sm font-medium transition-all flex items-center justify-center gap-2 ${
                     platform === p.id ? 'bg-brand-600 text-white' : 'bg-slate-700 text-slate-400 hover:text-white'
-                  }`}
-                >
+                  }`}>
                   <span>{p.icon}</span>{p.label}
                 </button>
               ))}
@@ -395,21 +428,16 @@ export default function SocialContentPage() {
 
           {/* Stap 3: Format & stijl */}
           <div className="bg-slate-800/50 border border-slate-700/50 rounded-2xl p-5 space-y-4">
-            <h2 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-              3. Format & stijl
-            </h2>
+            <h2 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">3. Format & stijl</h2>
 
             <div>
               <p className="text-xs text-slate-500 mb-2">Format</p>
               <div className="grid grid-cols-3 gap-2">
                 {FORMATS.map(f => (
-                  <button
-                    key={f.id}
-                    onClick={() => setFormat(f.id)}
+                  <button key={f.id} onClick={() => setFormat(f.id)}
                     className={`py-2 px-1 rounded-lg text-xs font-medium transition-all flex flex-col items-center gap-1 ${
                       format === f.id ? 'bg-brand-600 text-white' : 'bg-slate-700 text-slate-400 hover:text-white'
-                    }`}
-                  >
+                    }`}>
                     <f.icon className="w-3.5 h-3.5" />
                     {f.label}
                   </button>
@@ -421,13 +449,10 @@ export default function SocialContentPage() {
               <p className="text-xs text-slate-500 mb-2">Toon</p>
               <div className="grid grid-cols-2 gap-2">
                 {TONES.map(t => (
-                  <button
-                    key={t.id}
-                    onClick={() => setTone(t.id)}
+                  <button key={t.id} onClick={() => setTone(t.id)}
                     className={`py-2 px-3 rounded-lg text-xs font-medium transition-all text-left ${
                       tone === t.id ? 'bg-brand-600 text-white' : 'bg-slate-700 text-slate-400 hover:text-white'
-                    }`}
-                  >
+                    }`}>
                     <div>{t.label}</div>
                     <div className="opacity-70 mt-0.5">{t.desc}</div>
                   </button>
@@ -439,13 +464,10 @@ export default function SocialContentPage() {
               <p className="text-xs font-medium text-white">Taal</p>
               <div className="flex gap-2">
                 {(['nl', 'en'] as Language[]).map(l => (
-                  <button
-                    key={l}
-                    onClick={() => setLanguage(l)}
+                  <button key={l} onClick={() => setLanguage(l)}
                     className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all ${
                       language === l ? 'bg-brand-600 text-white' : 'bg-slate-700 text-slate-400'
-                    }`}
-                  >
+                    }`}>
                     {l.toUpperCase()}
                   </button>
                 ))}
@@ -455,45 +477,41 @@ export default function SocialContentPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs font-medium text-white">AI marketing beeld</p>
-                <p className="text-xs text-slate-500">Genereert een productafbeelding</p>
+                <p className="text-xs text-slate-500">
+                  {uploadMode ? 'Gebaseerd op geüploade foto' : 'Genereert een productafbeelding'}
+                </p>
               </div>
-              <button
-                onClick={() => setWithImage(!withImage)}
-                className={`w-10 h-5 rounded-full transition-all relative ${withImage ? 'bg-brand-600' : 'bg-slate-700'}`}
-              >
-                <div
-                  className="w-4 h-4 bg-white rounded-full absolute top-0.5 transition-all"
-                  style={{ left: withImage ? '22px' : '2px' }}
-                />
+              <button onClick={() => setWithImage(!withImage)}
+                className={`w-10 h-5 rounded-full transition-all relative ${withImage ? 'bg-brand-600' : 'bg-slate-700'}`}>
+                <div className="w-4 h-4 bg-white rounded-full absolute top-0.5 transition-all"
+                  style={{ left: withImage ? '22px' : '2px' }} />
               </button>
             </div>
           </div>
 
-          {/* Genereer / Opnieuw */}
+          {/* Genereer */}
           <div className="space-y-2">
             <button
               onClick={generate}
-              disabled={isGenerating || !selectedProd}
+              disabled={isGenerating || !canGenerate}
               className="w-full bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 disabled:opacity-50 text-white font-semibold py-3.5 rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg"
             >
               {isGenerating
                 ? <><Loader2 className="w-4 h-4 animate-spin" /> Genereren...</>
                 : <><Sparkles className="w-4 h-4" />
-                  {selectedProd
-                    ? `Genereer voor "${selectedProd.title.slice(0, 20)}${selectedProd.title.length > 20 ? '...' : ''}"`
+                  {uploadMode
+                    ? uploadedImage ? 'Genereer voor geüploade foto' : 'Upload eerst een foto'
+                    : selectedProd
+                    ? `Genereer voor "${selectedProd.title.slice(0, 18)}${selectedProd.title.length > 18 ? '...' : ''}"`
                     : 'Selecteer een product'
                   }
                 </>
               }
             </button>
 
-            {/* Opnieuw genereren — alleen zichtbaar als er al een resultaat is */}
             {isDone && !isGenerating && (
-              <button
-                onClick={generate}
-                disabled={!selectedProd}
-                className="w-full bg-slate-700 hover:bg-slate-600 disabled:opacity-50 text-slate-300 text-sm font-medium py-2.5 rounded-xl transition-all flex items-center justify-center gap-2"
-              >
+              <button onClick={generate} disabled={!canGenerate}
+                className="w-full bg-slate-700 hover:bg-slate-600 disabled:opacity-50 text-slate-300 text-sm font-medium py-2.5 rounded-xl transition-all flex items-center justify-center gap-2">
                 <Sparkles className="w-3.5 h-3.5" />
                 Opnieuw genereren
               </button>
@@ -513,11 +531,7 @@ export default function SocialContentPage() {
               <p className="text-slate-400 text-sm">
                 {withImage ? 'Content + beeld genereren...' : 'Content genereren...'}
               </p>
-              {withImage && (
-                <p className="text-xs text-slate-600 max-w-xs text-center">
-                  AI beeld genereren duurt 15–30 seconden.
-                </p>
-              )}
+              {withImage && <p className="text-xs text-slate-600 max-w-xs text-center">AI beeld genereren duurt 15–30 seconden.</p>}
             </div>
           ) : isDone && result ? (
             <ContentResult format={format} />
@@ -526,9 +540,9 @@ export default function SocialContentPage() {
               <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-pink-500/20 to-purple-600/20 border border-pink-500/30 flex items-center justify-center">
                 <Sparkles className="w-6 h-6 text-pink-400" />
               </div>
-              <h3 className="text-white font-semibold">Selecteer een product</h3>
+              <h3 className="text-white font-semibold">Kies een product of upload een foto</h3>
               <p className="text-slate-400 text-sm max-w-xs">
-                Kies een product uit je winkel, stel het platform en de stijl in, en genereer direct marketing content met AI.
+                Selecteer een product uit je winkel, of upload een productfoto — en genereer direct marketing content met AI.
               </p>
             </div>
           )}
