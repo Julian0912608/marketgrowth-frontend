@@ -1,5 +1,8 @@
 'use client';
 
+// app/dashboard/products/page.tsx
+// Fix: productlink via sku (= EAN voor Bol.com)
+
 import { useState, useEffect } from 'react';
 import { Search, ShoppingBag, TrendingUp, ExternalLink, Package } from 'lucide-react';
 import { api } from '@/lib/api';
@@ -30,21 +33,21 @@ function formatCurrency(n: number) {
   return new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR' }).format(n ?? 0);
 }
 
-// Genereer een directe productlink per platform
+// Genereer productlink — voor Bol.com is sku = EAN
 function getProductUrl(product: any): string | null {
   if (!product) return null;
 
-  if (product.platform === 'bolcom' && product.ean) {
-    return `https://www.bol.com/nl/nl/s/?searchtext=${encodeURIComponent(product.ean)}`;
-  }
-  if (product.platform === 'bolcom' && product.external_id) {
-    return `https://www.bol.com/nl/nl/p/product/${product.external_id}/`;
+  const ean = product.ean || product.sku;
+
+  if (product.platform === 'bolcom' && ean) {
+    // Directe EAN zoekopdracht op Bol.com
+    return `https://www.bol.com/nl/nl/s/?searchtext=${encodeURIComponent(ean)}`;
   }
   if (product.platform === 'shopify' && product.shop_domain && product.handle) {
     return `https://${product.shop_domain}/products/${product.handle}`;
   }
-  if (product.platform === 'amazon' && product.external_id) {
-    return `https://www.amazon.com/dp/${product.external_id}`;
+  if (product.platform === 'amazon' && (product.external_id || ean)) {
+    return `https://www.amazon.nl/dp/${product.external_id || ean}`;
   }
   if (product.platform === 'etsy' && product.external_id) {
     return `https://www.etsy.com/listing/${product.external_id}`;
@@ -130,45 +133,37 @@ export default function ProductsPage() {
       {/* Table */}
       <div className="bg-slate-800/50 border border-slate-700/50 rounded-2xl overflow-hidden">
         {loading ? (
-          <div className="p-6 space-y-3">
-            {[1,2,3,4,5].map(i => (
-              <div key={i} className="flex gap-4 items-center">
-                <div className="w-8 h-8 bg-slate-700/50 rounded-lg animate-pulse" />
-                <div className="flex-1 h-4 bg-slate-700/50 rounded animate-pulse" />
-                <div className="w-20 h-4 bg-slate-700/50 rounded animate-pulse" />
-                <div className="w-24 h-4 bg-slate-700/50 rounded animate-pulse" />
-              </div>
+          <div className="p-8 space-y-3">
+            {[...Array(5)].map((_, i) => (
+              <div key={i} className="h-12 bg-slate-700/30 rounded-xl animate-pulse" />
             ))}
           </div>
         ) : filtered.length > 0 ? (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full">
               <thead>
                 <tr className="border-b border-slate-700/50">
-                  <th className="px-5 py-3.5 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider w-8">#</th>
-                  <th className="px-5 py-3.5 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">Product</th>
-                  <th className="px-5 py-3.5 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">Platform</th>
-                  <th className="px-5 py-3.5 text-right text-xs font-semibold text-slate-400 uppercase tracking-wider">Units sold</th>
-                  <th className="px-5 py-3.5 text-right text-xs font-semibold text-slate-400 uppercase tracking-wider">Revenue</th>
-                  <th className="px-5 py-3.5 text-right text-xs font-semibold text-slate-400 uppercase tracking-wider">Avg price</th>
-                  <th className="px-5 py-3.5 text-center text-xs font-semibold text-slate-400 uppercase tracking-wider w-10">Link</th>
+                  <th className="text-left px-5 py-3.5 text-xs font-semibold text-slate-500 uppercase tracking-wider w-8">#</th>
+                  <th className="text-left px-5 py-3.5 text-xs font-semibold text-slate-500 uppercase tracking-wider">Product</th>
+                  <th className="text-left px-5 py-3.5 text-xs font-semibold text-slate-500 uppercase tracking-wider">Platform</th>
+                  <th className="text-right px-5 py-3.5 text-xs font-semibold text-slate-500 uppercase tracking-wider">Units sold</th>
+                  <th className="text-right px-5 py-3.5 text-xs font-semibold text-slate-500 uppercase tracking-wider">Revenue</th>
+                  <th className="text-right px-5 py-3.5 text-xs font-semibold text-slate-500 uppercase tracking-wider">Avg price</th>
+                  <th className="text-center px-5 py-3.5 text-xs font-semibold text-slate-500 uppercase tracking-wider">Link</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-700/30">
                 {filtered.map((p, i) => {
                   const productUrl = getProductUrl(p);
                   return (
-                    <tr key={i} className="hover:bg-slate-700/20 transition-colors group">
-                      <td className="px-5 py-4 text-slate-500 text-xs font-medium">{i + 1}</td>
-                      <td className="px-5 py-4 max-w-xs">
-                        <div className="font-medium text-white leading-snug line-clamp-2">{p.title}</div>
-                        <div className="flex gap-2 mt-1">
-                          {p.sku && <span className="text-xs text-slate-500">SKU: {p.sku}</span>}
-                          {p.ean && <span className="text-xs text-slate-500">EAN: {p.ean}</span>}
-                        </div>
+                    <tr key={i} className="hover:bg-slate-700/20 transition-colors">
+                      <td className="px-5 py-4 text-sm text-slate-600 font-medium">{i + 1}</td>
+                      <td className="px-5 py-4">
+                        <div className="text-sm text-white font-medium leading-snug max-w-xs">{p.title}</div>
+                        {p.sku && <div className="text-xs text-slate-500 mt-0.5">{p.sku}</div>}
                       </td>
                       <td className="px-5 py-4">
-                        <span className={`text-xs font-medium px-2.5 py-1 rounded-lg ${PLATFORM_COLORS[p.platform] ?? 'bg-slate-700 text-slate-400'}`}>
+                        <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium ${PLATFORM_COLORS[p.platform] ?? 'bg-slate-700 text-slate-400'}`}>
                           {PLATFORM_LABELS[p.platform] ?? p.platform}
                         </span>
                       </td>
@@ -191,7 +186,7 @@ export default function ProductsPage() {
                             target="_blank"
                             rel="noopener noreferrer"
                             className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-slate-700/50 hover:bg-brand-600/30 hover:text-brand-400 text-slate-500 transition-colors"
-                            title={`View on ${PLATFORM_LABELS[p.platform] ?? p.platform}`}
+                            title={`Open op ${PLATFORM_LABELS[p.platform] ?? p.platform}`}
                           >
                             <ExternalLink className="w-3.5 h-3.5" />
                           </a>
@@ -211,10 +206,10 @@ export default function ProductsPage() {
           <div className="text-center py-16">
             <ShoppingBag className="w-10 h-10 text-slate-600 mx-auto mb-3" />
             <p className="text-slate-400 font-medium mb-1">
-              {search ? 'No products match your search' : 'No products found'}
+              {search ? 'Geen producten gevonden' : 'Geen producten'}
             </p>
             <p className="text-slate-500 text-sm">
-              {!search && 'Connect a store and sync your data to see products here.'}
+              {!search && 'Koppel een winkel en sync je data om producten te zien.'}
             </p>
           </div>
         )}
@@ -222,8 +217,8 @@ export default function ProductsPage() {
 
       {filtered.length > 0 && (
         <p className="text-xs text-slate-600 mt-3 text-right">
-          Showing {filtered.length} product{filtered.length !== 1 ? 's' : ''}
-          {search && ` matching "${search}"`}
+          {filtered.length} product{filtered.length !== 1 ? 'en' : ''}
+          {search && ` met "${search}"`}
         </p>
       )}
     </div>
