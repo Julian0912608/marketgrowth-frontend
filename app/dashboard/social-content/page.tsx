@@ -237,17 +237,47 @@ export default function SocialContentPage() {
     return () => clearTimeout(t);
   }, [loadProducts]);
 
-  // Foto upload handler
+  // Foto upload handler — comprimeert via canvas tot max 4MB voor Anthropic API
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      const base64Full = ev.target?.result as string;
-      const base64 = base64Full.split(',')[1]; // strip data:image/...;base64,
-      setUploadedImage({ base64, preview: base64Full });
+
+    const img = new Image();
+    const objectUrl = URL.createObjectURL(file);
+
+    img.onload = () => {
+      URL.revokeObjectURL(objectUrl);
+
+      // Resize naar max 1024px aan de langste kant
+      const MAX_PX = 1024;
+      let { width, height } = img;
+      if (width > MAX_PX || height > MAX_PX) {
+        if (width > height) { height = Math.round((height / width) * MAX_PX); width = MAX_PX; }
+        else                { width = Math.round((width / height) * MAX_PX);  height = MAX_PX; }
+      }
+
+      const canvas = document.createElement('canvas');
+      canvas.width  = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d')!;
+      ctx.drawImage(img, 0, 0, width, height);
+
+      // Comprimeer als JPEG met kwaliteit 0.85 — houdt file klein
+      const preview  = canvas.toDataURL('image/jpeg', 0.85);
+      const base64   = preview.split(',')[1];
+
+      // Check grootte (max 4MB base64 = ~3MB binair)
+      if (base64.length > 4 * 1024 * 1024) {
+        // Extra compressie bij grote foto's
+        const preview2 = canvas.toDataURL('image/jpeg', 0.6);
+        const base64b  = preview2.split(',')[1];
+        setUploadedImage({ base64: base64b, preview: preview2 });
+      } else {
+        setUploadedImage({ base64, preview });
+      }
     };
-    reader.readAsDataURL(file);
+
+    img.src = objectUrl;
   };
 
   const generate = async () => {
