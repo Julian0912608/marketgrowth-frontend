@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { TrendingUp, ShoppingCart, Users, BarChart3, ArrowUpRight, ArrowDownRight, Calendar, Download } from 'lucide-react';
+import { TrendingUp, ShoppingCart, BarChart3, ArrowUpRight, ArrowDownRight, Calendar, Package } from 'lucide-react';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, BarChart, Bar,
@@ -20,7 +20,16 @@ const PLATFORM_LABELS: Record<string, string> = {
 
 type Period = '24h' | '7d' | '30d' | '90d' | 'custom';
 
+// FIX: alle revenue excl. BTW (/ 1.21)
 function formatCurrency(val: number) {
+  return new Intl.NumberFormat('nl-NL', {
+    style: 'currency', currency: 'EUR',
+    minimumFractionDigits: 2, maximumFractionDigits: 2,
+  }).format((val ?? 0) / 1.21);
+}
+
+// Voor bedragen die al excl. BTW zijn
+function formatCurrencyRaw(val: number) {
   return new Intl.NumberFormat('nl-NL', {
     style: 'currency', currency: 'EUR',
     minimumFractionDigits: 2, maximumFractionDigits: 2,
@@ -99,19 +108,45 @@ export default function AnalyticsPage() {
     if (period !== 'custom') load();
   }, [period]);
 
-  // Chart data
   const chartData = daily.map((d: any) => ({
     date:    d.date,
     label:   formatDateLabel(d.date, period),
-    revenue: Math.round(parseFloat(d.revenue ?? 0) * 100) / 100,
+    revenue: Math.round(parseFloat(d.revenue ?? 0) / 1.21 * 100) / 100,
     orders:  parseInt(d.orders_count ?? 0),
   }));
 
+  // FIX: Customers vervangen door Units sold
+  const totalUnitsSold = topProducts.reduce((s, p) => s + parseInt(p.total_sold ?? 0), 0);
+
   const kpis = [
-    { label: 'Revenue',       value: overview ? formatCurrency(parseFloat(overview.current.revenue)) : '—',        change: overview?.changes.revenue,      icon: TrendingUp, color: 'bg-emerald-500' },
-    { label: 'Orders',        value: overview ? Number(overview.current.orders_count).toLocaleString() : '—',       change: overview?.changes.orders_count, icon: ShoppingCart, color: 'bg-blue-500' },
-    { label: 'Avg Order',     value: overview ? formatCurrency(parseFloat(overview.current.avg_order_value)) : '—', change: undefined,                       icon: BarChart3, color: 'bg-violet-500' },
-    { label: 'Customers',     value: overview ? Number(overview.current.unique_customers).toLocaleString() : '—',   change: undefined,                       icon: Users, color: 'bg-amber-500' },
+    {
+      label: 'Revenue excl. VAT',
+      value: overview ? formatCurrency(parseFloat(overview.current.revenue)) : '—',
+      change: overview?.changes.revenue,
+      icon: TrendingUp,
+      color: 'bg-emerald-500',
+    },
+    {
+      label: 'Orders',
+      value: overview ? Number(overview.current.orders_count).toLocaleString() : '—',
+      change: overview?.changes.orders_count,
+      icon: ShoppingCart,
+      color: 'bg-blue-500',
+    },
+    {
+      label: 'Avg Order excl. VAT',
+      value: overview ? formatCurrency(parseFloat(overview.current.avg_order_value)) : '—',
+      change: undefined,
+      icon: BarChart3,
+      color: 'bg-violet-500',
+    },
+    {
+      label: 'Units sold',
+      value: loading ? '—' : totalUnitsSold.toLocaleString(),
+      change: undefined,
+      icon: Package,
+      color: 'bg-amber-500',
+    },
   ];
 
   const PERIODS: { id: Period; label: string }[] = [
@@ -121,6 +156,13 @@ export default function AnalyticsPage() {
     { id: '90d',    label: '90 days' },
     { id: 'custom', label: 'Custom' },
   ];
+
+  // FIX: grafiektitel
+  function chartTitle(): string {
+    if (period === '24h') return 'Revenue today excl. VAT (by hour)';
+    if (period === 'custom' && customFrom && customTo) return `Revenue excl. VAT — ${customFrom} to ${customTo}`;
+    return `Revenue excl. VAT — last ${period}`;
+  }
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
@@ -147,9 +189,7 @@ export default function AnalyticsPage() {
                 setShowCustom(p.id === 'custom');
               }}
               className={`px-4 py-1.5 text-xs font-medium rounded-lg transition-all ${
-                period === p.id
-                  ? 'bg-brand-600 text-white shadow'
-                  : 'text-slate-400 hover:text-white'
+                period === p.id ? 'bg-brand-600 text-white shadow' : 'text-slate-400 hover:text-white'
               }`}
             >
               {p.id === 'custom' && <Calendar className="w-3 h-3 inline mr-1" />}
@@ -158,7 +198,6 @@ export default function AnalyticsPage() {
           ))}
         </div>
 
-        {/* Custom date range */}
         {showCustom && (
           <div className="flex items-center gap-2 bg-slate-800/80 border border-slate-700/50 rounded-xl px-3 py-2">
             <input
@@ -209,9 +248,7 @@ export default function AnalyticsPage() {
 
       {/* Revenue chart */}
       <div className="bg-slate-800/50 border border-slate-700/50 rounded-2xl p-6 mb-6">
-        <h2 className="font-display font-700 text-white mb-5">
-          Revenue {period === '24h' ? 'today (by hour)' : `last ${period}`}
-        </h2>
+        <h2 className="font-display font-700 text-white mb-5">{chartTitle()}</h2>
         {loading ? (
           <div className="animate-pulse h-48 bg-slate-700/50 rounded-xl" />
         ) : chartData.length === 0 ? (
@@ -222,24 +259,25 @@ export default function AnalyticsPage() {
               <defs>
                 <linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%"  stopColor="#4f46e5" stopOpacity={0.3} />
-                  <stop offset="95%" stopColor="#4f46e5" stopOpacity={0} />
+                  <stop offset="95%" stopColor="#4f46e5" stopOpacity={0}   />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
+              <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
               <XAxis dataKey="label" tick={{ fill: '#64748b', fontSize: 11 }} axisLine={false} tickLine={false} />
               <YAxis tick={{ fill: '#64748b', fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={v => `€${v}`} />
               <Tooltip content={<CustomTooltip />} />
-              <Area type="monotone" dataKey="revenue" stroke="#4f46e5" strokeWidth={2} fill="url(#revGrad)" dot={false} />
+              <Area type="monotone" dataKey="revenue" stroke="#4f46e5" strokeWidth={2} fill="url(#revGrad)" dot={false} activeDot={{ r: 4, fill: '#4f46e5' }} />
             </AreaChart>
           </ResponsiveContainer>
         )}
       </div>
 
-      <div className="grid lg:grid-cols-2 gap-6 mb-6">
+      {/* Platform + Top products */}
+      <div className="grid lg:grid-cols-2 gap-6">
 
-        {/* Platform breakdown */}
+        {/* Revenue by platform */}
         <div className="bg-slate-800/50 border border-slate-700/50 rounded-2xl p-6">
-          <h2 className="font-display font-700 text-white mb-5">Revenue by platform</h2>
+          <h2 className="font-display font-700 text-white mb-5">Revenue by platform excl. VAT</h2>
           {loading ? (
             <div className="space-y-3">{[1,2,3].map(i => <div key={i} className="animate-pulse h-8 bg-slate-700/50 rounded-lg" />)}</div>
           ) : platforms.length === 0 ? (
@@ -273,7 +311,7 @@ export default function AnalyticsPage() {
           )}
         </div>
 
-        {/* Top products */}
+        {/* Top products — met units sold rechts */}
         <div className="bg-slate-800/50 border border-slate-700/50 rounded-2xl p-6">
           <h2 className="font-display font-700 text-white mb-5">Top products</h2>
           {loading ? (
@@ -284,16 +322,22 @@ export default function AnalyticsPage() {
             <div className="space-y-3">
               {topProducts.slice(0, 8).map((p: any, i: number) => (
                 <div key={i} className="flex items-center justify-between py-2 border-b border-slate-700/30 last:border-0">
-                  <div className="flex items-center gap-3 min-w-0">
+                  <div className="flex items-center gap-3 min-w-0 flex-1">
                     <span className="text-xs font-bold text-slate-500 w-5 flex-shrink-0">#{i+1}</span>
                     <div className="min-w-0">
                       <p className="text-sm text-white truncate">{p.title}</p>
-                      <p className="text-xs text-slate-500">{PLATFORM_LABELS[p.platform] ?? p.platform} · {p.total_sold} sold</p>
+                      <p className="text-xs text-slate-500">
+                        {PLATFORM_LABELS[p.platform] ?? p.platform} · {parseInt(p.total_sold ?? 0)} sold
+                      </p>
                     </div>
                   </div>
-                  <span className="text-sm font-semibold text-emerald-400 flex-shrink-0 ml-3">
-                    {formatCurrency(parseFloat(p.total_revenue))}
-                  </span>
+                  {/* FIX: revenue excl. BTW rechts */}
+                  <div className="flex-shrink-0 ml-3 text-right">
+                    <p className="text-sm font-semibold text-emerald-400">
+                      {formatCurrencyRaw(parseFloat(p.total_revenue ?? '0') / 1.21)}
+                    </p>
+                    <p className="text-xs text-slate-500">{parseInt(p.total_sold ?? 0)} units</p>
+                  </div>
                 </div>
               ))}
             </div>
