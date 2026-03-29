@@ -16,23 +16,23 @@ const platforms = [
   },
   {
     name: 'Amazon',
-    svg: `<svg viewBox="0 0 145 44" width="90" height="28" xmlns="http://www.w3.org/2000/svg"><text x="0" y="34" font-family="Arial Black,Arial" font-weight="900" font-size="36" fill="#232F3E">amazon</text><path d="M12 40 Q72 52 132 40" stroke="#FF9900" stroke-width="5" fill="none" stroke-linecap="round"/><path d="M122 33 Q135 39 132 40 Q128 34 124 37z" fill="#FF9900"/></svg>`,
+    svg: `<svg viewBox="0 0 145 44" width="90" height="28" xmlns="http://www.w3.org/2000/svg"><text x="0" y="34" font-family="Arial Black,Arial" font-weight="900" font-size="36" fill="#FF9900">amazon</text></svg>`,
   },
   {
     name: 'Bol.com',
-    svg: `<svg viewBox="0 0 90 36" width="72" height="29" xmlns="http://www.w3.org/2000/svg"><text x="0" y="28" font-family="Arial Black, Arial" font-weight="900" font-size="30" fill="#0000FF">bol</text><circle cx="76" cy="18" r="12" fill="#0000FF"/><circle cx="76" cy="18" r="6" fill="white"/></svg>`,
+    svg: `<svg viewBox="0 0 80 32" width="60" height="24" xmlns="http://www.w3.org/2000/svg"><rect width="80" height="32" rx="6" fill="#0000a4"/><text x="8" y="23" font-family="Arial Black,Arial" font-weight="900" font-size="18" fill="white">bol.com</text></svg>`,
   },
   {
     name: 'Etsy',
-    svg: `<svg viewBox="0 0 56 56" width="28" height="28" xmlns="http://www.w3.org/2000/svg"><circle cx="28" cy="28" r="28" fill="#F56400"/><path d="M17 13h22v7H24v8h13v7H24v9h15v7H17z" fill="white"/></svg>`,
+    svg: `<svg viewBox="0 0 80 40" width="56" height="28" xmlns="http://www.w3.org/2000/svg"><text x="0" y="32" font-family="Arial Black,Arial" font-weight="900" font-size="36" fill="#F45800">Etsy</text></svg>`,
   },
   {
     name: 'Meta Ads',
-    svg: `<svg viewBox="0 0 56 56" width="32" height="32" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="mg2" x1="0%" y1="100%" x2="100%" y2="0%"><stop offset="0%" stop-color="#0064E0"/><stop offset="100%" stop-color="#00C2FF"/></linearGradient></defs><circle cx="28" cy="28" r="28" fill="url(#mg2)"/><path d="M12 34c0-5 2-10 5-14 2-3 5-5 8-5 2.5 0 5 1.5 7.5 5.5l6 9.5c1.5 2.5 3 3.5 4.5 3.5 3.5 0 5.5-4 5.5-10 0-4-1.5-8-4.5-10.5" stroke="white" stroke-width="4.5" stroke-linecap="round" fill="none"/><path d="M44 34c0-5-2-10-5-14-2-3-5-5-8-5-2.5 0-5 1.5-7.5 5.5" stroke="white" stroke-width="4.5" stroke-linecap="round" fill="none"/></svg>`,
+    svg: `<svg viewBox="0 0 56 56" width="32" height="32" xmlns="http://www.w3.org/2000/svg"><circle cx="28" cy="28" r="28" fill="#0082FB"/><text x="10" y="38" font-family="Arial Black,Arial" font-weight="900" font-size="28" fill="white">f</text></svg>`,
   },
   {
     name: 'Google Ads',
-    svg: `<svg viewBox="0 0 56 56" width="32" height="32" xmlns="http://www.w3.org/2000/svg"><rect x="4" y="28" width="14" height="22" rx="7" fill="#EA4335"/><rect x="21" y="6" width="14" height="44" rx="7" fill="#34A853"/><rect x="38" y="18" width="14" height="32" rx="7" fill="#FBBC04"/></svg>`,
+    svg: `<svg viewBox="0 0 56 56" width="32" height="32" xmlns="http://www.w3.org/2000/svg"><rect x="0"  y="6" width="14" height="44" rx="7" fill="#4285F4"/><rect x="21" y="22" width="14" height="28" rx="7" fill="#EA4335"/><rect x="21" y="6" width="14" height="44" rx="7" fill="#34A853"/><rect x="38" y="18" width="14" height="32" rx="7" fill="#FBBC04"/></svg>`,
   },
   {
     name: 'TikTok Ads',
@@ -40,7 +40,6 @@ const platforms = [
   },
 ];
 
-// ── Platform connections ──────────────────────────────────────
 export function PlatformBar() {
   return (
     <section className="py-14 border-y border-slate-100 bg-white">
@@ -60,7 +59,7 @@ export function PlatformBar() {
           ))}
         </div>
         <p className="text-center text-sm text-slate-400 mt-8">
-          All your revenue, ROAS, and product data — unified in seconds.
+          All your revenue, ROAS, and product data unified in seconds.
           <span className="text-slate-500 font-medium"> More integrations coming soon.</span>
         </p>
       </div>
@@ -68,7 +67,6 @@ export function PlatformBar() {
   );
 }
 
-// ── Product Performance ───────────────────────────────────────
 export function ProductPerformance() {
   return (
     <section id="features" className="py-24 bg-slate-50">
@@ -83,11 +81,10 @@ export function ProductPerformance() {
               See which products perform best across every platform
             </h2>
             <p className="text-slate-500 text-lg leading-relaxed">
-              Stop guessing where your products convert best. MarketGrow shows you real performance data across all your stores and marketplaces — side by side.
+              Stop guessing where your products convert best. MarketGrow shows you real performance data across all your stores and marketplaces, side by side.
             </p>
           </div>
 
-          {/* Mock product card */}
           <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
             <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
               <div>
@@ -129,7 +126,8 @@ export function ProductPerformance() {
               <Sparkles className="w-4 h-4 text-brand-600 flex-shrink-0 mt-0.5" />
               <div>
                 <p className="text-xs font-semibold text-brand-700 mb-0.5">AI insight</p>
-                <p className="text-sm text-brand-800">Amazon shows the highest conversion rate for this product. Consider increasing Amazon ad spend.</p>
+                <p className="text-sm text-brand-800">Amazon shows the highest conversion rate for this product.
+                  Consider increasing Amazon ad spend.</p>
               </div>
             </div>
           </div>
@@ -139,7 +137,6 @@ export function ProductPerformance() {
   );
 }
 
-// ── Marketing Insights ────────────────────────────────────────
 export function MarketingInsights() {
   return (
     <section className="py-24 bg-white">
@@ -182,7 +179,8 @@ export function MarketingInsights() {
               <Sparkles className="w-4 h-4 text-brand-600 flex-shrink-0 mt-0.5" />
               <div>
                 <p className="text-xs font-semibold text-brand-700 mb-0.5">AI insight</p>
-                <p className="text-sm text-brand-800">Meta campaigns generate the highest return for this product category. TikTok Ads ROAS is below break-even — consider pausing.</p>
+                <p className="text-sm text-brand-800">Meta campaigns generate the highest return for this product category.
+                  TikTok Ads ROAS is below break-even. Consider pausing.</p>
               </div>
             </div>
           </div>
@@ -196,7 +194,7 @@ export function MarketingInsights() {
               Understand which campaigns actually drive revenue
             </h2>
             <p className="text-slate-500 text-lg leading-relaxed">
-              ROAS per campaign, winning audiences, ad fatigue detection. Know exactly where to spend more and where to cut — before the money is wasted.
+              ROAS per campaign, winning audiences, ad fatigue detection. Know exactly where to spend more and where to cut before the money is wasted.
             </p>
           </div>
         </div>
@@ -205,7 +203,6 @@ export function MarketingInsights() {
   );
 }
 
-// ── AI Growth Opportunities ───────────────────────────────────
 export function GrowthOpportunities() {
   const opportunities = [
     { icon: '📈', action: 'Scale Amazon ads for Hydrating Face Serum', reason: 'ROAS 4.8× — highest in portfolio', tag: 'Scale', tagColor: 'bg-emerald-50 text-emerald-700 border-emerald-100' },
@@ -257,7 +254,6 @@ export function GrowthOpportunities() {
   );
 }
 
-// ── AI Ad Creative ────────────────────────────────────────────
 export function AdCreative() {
   return (
     <section className="py-24 bg-white">
@@ -272,7 +268,7 @@ export function AdCreative() {
               Generate new ad ideas based on what actually works
             </h2>
             <p className="text-slate-500 text-lg leading-relaxed">
-              MarketGrow analyses your top-performing ads and products, then suggests fresh creative angles — so you never run out of ideas.
+              MarketGrow analyses your top-performing ads and products, then suggests fresh creative angles so you never run out of ideas.
             </p>
           </div>
 
@@ -300,7 +296,6 @@ export function AdCreative() {
   );
 }
 
-// ── Pricing ───────────────────────────────────────────────────
 const plans = [
   {
     slug: 'starter', name: 'Starter', price: 20, popular: false,
@@ -371,12 +366,11 @@ export function Pricing() {
   );
 }
 
-// ── Testimonials / Social Proof ───────────────────────────────
 export function Testimonials() {
   const problems = [
     { emoji: '😓', title: 'Too many tabs open', desc: 'Switching between Shopify, Meta Ads and Amazon daily just to get a basic overview of your numbers.' },
     { emoji: '📉', title: 'Wasted ad spend', desc: 'Pouring money into campaigns without knowing which ones actually drive profitable revenue.' },
-    { emoji: '🔍', title: 'No clear actions', desc: 'Analytics tools show you what happened — but never tell you what to do about it.' },
+    { emoji: '🔍', title: 'No clear actions', desc: 'Analytics tools show you what happened. They never tell you what to do about it.' },
   ];
 
   const waitlistAvatars = ['JK', 'SM', 'AO', 'RB', 'LP'];
@@ -424,13 +418,13 @@ export function Testimonials() {
             Ecommerce entrepreneurs from Shopify, Amazon and Bol.com stores are already using MarketGrow.
           </p>
           <p className="text-brand-600 font-semibold text-sm mb-6">
-            Start your free 14-day trial today — no credit card required.
+            Start your free 14-day trial today. No credit card required.
           </p>
           <Link
             href="/register"
             className="inline-flex items-center gap-2 bg-brand-600 hover:bg-brand-700 text-white font-semibold px-6 py-3 rounded-xl transition-all shadow-lg text-sm"
           >
-            Start free trial →
+            Start free trial
           </Link>
         </div>
       </div>
@@ -438,14 +432,19 @@ export function Testimonials() {
   );
 }
 
-// ── FAQ ───────────────────────────────────────────────────────
 const faqs = [
-  { q: 'Which platforms does MarketGrow support?',     a: 'Shopify, WooCommerce, Amazon, Bol.com, Etsy, Meta Ads, Google Ads, TikTok Ads and more. New integrations are added regularly.' },
-  { q: 'Is my data secure?',                           a: 'Yes. All data is encrypted in transit and at rest. Each account is fully isolated — no data is ever shared between customers.' },
-  { q: 'Can I cancel my subscription at any time?',    a: 'Absolutely. Cancel anytime from your account settings. You keep access until the end of your billing period.' },
-  { q: 'What are AI credits?',                         a: 'AI credits power insight generation, recommendations, and automated reports. Unused credits do not roll over.' },
-  { q: 'Do you offer a free trial?',                   a: 'Yes — all plans include a 14-day free trial. No credit card required to start.' },
-  { q: 'What happens if I exceed my AI credit limit?', a: "Your dashboard continues to work normally. AI-powered features pause until the next billing cycle — we'll notify you before that happens." },
+  { q: 'Which platforms does MarketGrow support?',
+    a: 'Shopify, WooCommerce, Amazon, Bol.com, Etsy, Meta Ads, Google Ads, TikTok Ads and more. New integrations are added regularly.' },
+  { q: 'Is my data secure?',
+    a: 'Yes. All data is encrypted in transit and at rest. Each account is fully isolated and no data is ever shared between customers.' },
+  { q: 'Can I cancel my subscription at any time?',
+    a: 'Absolutely. Cancel anytime from your account settings. You keep access until the end of your billing period.' },
+  { q: 'What are AI credits?',
+    a: 'AI credits power insight generation, recommendations, and automated reports. Unused credits do not roll over.' },
+  { q: 'Do you offer a free trial?',
+    a: 'Yes, all plans include a 14-day free trial. No credit card required to start.' },
+  { q: 'What happens if I exceed my AI credit limit?',
+    a: "Your dashboard continues to work normally. AI-powered features pause until the next billing cycle. We will notify you before that happens." },
 ];
 
 export function FAQ() {
@@ -473,7 +472,6 @@ export function FAQ() {
   );
 }
 
-// ── CTA ───────────────────────────────────────────────────────
 export function CTA() {
   return (
     <section id="cta" className="py-24 bg-brand-600">
@@ -483,7 +481,7 @@ export function CTA() {
         </h2>
         <p className="text-brand-100 text-lg mb-10">
           Connect your stores, get AI-powered actions every day, and stop guessing.
-          14 days free — no credit card required.
+          14 days free. No credit card required.
         </p>
         <Link
           href="/register"
@@ -498,7 +496,6 @@ export function CTA() {
   );
 }
 
-// ── Footer ────────────────────────────────────────────────────
 export function Footer() {
   const cols = [
     {
