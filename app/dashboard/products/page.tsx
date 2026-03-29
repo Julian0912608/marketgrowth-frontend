@@ -1,417 +1,258 @@
 'use client';
 
-// app/dashboard/page.tsx
+// app/dashboard/products/page.tsx
+//
+// FIXES:
+//  1. getProductUrl voor Bol.com: zoek op producttitel want offer_id
+//     is niet beschikbaar vanuit de analytics query
+//  2. Revenue wordt getoond excl. BTW (/ 1.21)
 
-import { useState } from 'react';
-import Link from 'next/link';
-import {
-  TrendingUp, ShoppingCart, Zap, ArrowUpRight, ArrowDownRight,
-  Store, RefreshCw, Sparkles, Plus, AlertCircle,
-} from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Search, ShoppingBag, TrendingUp, ExternalLink, Package } from 'lucide-react';
 import { api } from '@/lib/api';
-import { useAuthStore } from '@/lib/store';
-import { usePermissions } from '@/lib/usePermissions';
-import { AppLoader } from '@/components/dashboard/AppLoader';
-import { OnboardingChecklist } from '@/components/dashboard/OnboardingChecklist';
-import { PageErrorBoundary, CardErrorBoundary } from '@/components/ErrorBoundary';
 
-interface Stats {
-  revenue:  number;
-  orders:   number;
-  avgOrder: number;
-  change:   { revenue: number; orders: number };
-}
+const PLATFORM_LABELS: Record<string, string> = {
+  shopify:     'Shopify',
+  woocommerce: 'WooCommerce',
+  bolcom:      'Bol.com',
+  amazon:      'Amazon',
+  etsy:        'Etsy',
+  lightspeed:  'Lightspeed',
+  bigcommerce: 'BigCommerce',
+  magento:     'Magento',
+};
 
-// FIX: veldnamen matchen de API response van /analytics/top-products
-interface TopProduct {
-  title:         string;
-  platform:      string;
-  total_sold:    number;
-  total_revenue: string;
-}
-
-interface Integration {
-  id:           string;
-  platformSlug: string;
-  shopName:     string;
-  status:       string;
-  lastSyncAt:   string | null;
-  ordersCount:  number;
-}
-
-interface AiInsight {
-  briefing: string;
-  actions:  { priority: string; title: string; description: string; channel: string }[];
-  alerts:   string[];
-}
-
-interface Credits {
-  used:      number;
-  limit:     number | null;
-  remaining: number | null;
-  unlimited: boolean;
-  planSlug?: string;
-}
+const PLATFORM_COLORS: Record<string, string> = {
+  shopify:     'bg-emerald-500/15 text-emerald-400',
+  woocommerce: 'bg-purple-500/15 text-purple-400',
+  bolcom:      'bg-blue-500/15 text-blue-400',
+  amazon:      'bg-orange-500/15 text-orange-400',
+  etsy:        'bg-rose-500/15 text-rose-400',
+  lightspeed:  'bg-red-500/15 text-red-400',
+  bigcommerce: 'bg-cyan-500/15 text-cyan-400',
+  magento:     'bg-amber-500/15 text-amber-400',
+};
 
 function formatCurrency(n: number) {
-  return new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(n ?? 0);
+  return new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR' }).format(n ?? 0);
 }
 
-function getGreeting() {
-  const h = new Date().getHours();
-  if (h < 12) return 'Good morning';
-  if (h < 17) return 'Good afternoon';
-  return 'Good evening';
-}
+// Genereer productlink per platform
+// Bol.com: de analytics query geeft geen bruikbaar offer_id terug —
+// offer_id uit products tabel is beschikbaar via de EAN join maar die
+// faalt voor Bol.com line items (geen SKU). Veiligste fallback: zoek
+// op producttitel zodat er altijd een werkende link is.
+function getProductUrl(product: any): string | null {
+  if (!product) return null;
 
-function ChangeBadge({ change, label = 'vs last week' }: { change: number; label?: string }) {
-  const up = change >= 0;
-  return (
-    <div className={'flex items-center gap-1 text-xs font-medium ' + (up ? 'text-emerald-400' : 'text-rose-400')}>
-      {up ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
-      {Math.abs(Math.round(change * 10) / 10)}% {label}
-    </div>
-  );
-}
+  const platform = product.platform;
+  const title    = product.title;
+  const ean      = product.ean;
+  const offerId  = product.offer_id;
 
-function timeAgo(dateStr: string | null): string {
-  if (!dateStr) return 'Never';
-  const diff = Date.now() - new Date(dateStr).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 2)   return 'Just now';
-  if (mins < 60)  return `${mins}m ago`;
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24)   return `${hrs}h ago`;
-  return `${Math.floor(hrs / 24)}d ago`;
-}
-
-function EmptyDashboard() {
-  return (
-    <div className="flex flex-col items-center justify-center py-20 px-6 text-center">
-      <div className="w-16 h-16 rounded-2xl bg-brand-600/10 border border-brand-600/20 flex items-center justify-center mb-6">
-        <Store className="w-8 h-8 text-brand-400" />
-      </div>
-      <h2 className="font-display text-2xl font-800 text-white mb-3">Connect your first store</h2>
-      <p className="text-slate-400 text-sm max-w-sm leading-relaxed mb-8">
-        Connect Bol.com, Shopify, or another platform and MarketGrow will start analysing your data immediately.
-      </p>
-      <div className="flex flex-col sm:flex-row gap-3">
-        <Link href="/dashboard/integrations" className="inline-flex items-center gap-2 bg-brand-600 hover:bg-brand-700 text-white font-semibold px-5 py-3 rounded-xl transition-colors text-sm">
-          <Plus className="w-4 h-4" />
-          Connect a store
-        </Link>
-        <Link href="/dashboard/ai-insights" className="inline-flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium px-5 py-3 rounded-xl transition-colors text-sm">
-          <Sparkles className="w-4 h-4 text-brand-400" />
-          Preview AI Insights
-        </Link>
-      </div>
-      <div className="mt-12 grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-lg">
-        {[
-          { name: 'Shopify',     color: 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' },
-          { name: 'Bol.com',     color: 'bg-blue-500/10 border-blue-500/20 text-blue-400' },
-          { name: 'WooCommerce', color: 'bg-purple-500/10 border-purple-500/20 text-purple-400' },
-          { name: 'Etsy',        color: 'bg-orange-500/10 border-orange-500/20 text-orange-400' },
-        ].map(p => (
-          <div key={p.name} className={`rounded-xl border px-3 py-2 text-xs font-semibold text-center ${p.color}`}>{p.name}</div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function CreditBar({ credits, planSlug }: { credits: Credits; planSlug: string }) {
-  if (credits.unlimited) return null;
-  const used        = credits.used ?? 0;
-  const limit       = credits.limit ?? 100;
-  const pct         = Math.min(100, Math.round((used / limit) * 100));
-  const isLow       = pct >= 80;
-  const isExhausted = pct >= 100;
-  return (
-    <div className={`rounded-xl border p-4 mb-6 ${isExhausted ? 'bg-rose-500/5 border-rose-500/20' : isLow ? 'bg-amber-500/5 border-amber-500/20' : 'bg-slate-800/50 border-slate-700/50'}`}>
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-2">
-          <Zap className={`w-3.5 h-3.5 ${isExhausted ? 'text-rose-400' : isLow ? 'text-amber-400' : 'text-brand-400'}`} />
-          <span className="text-xs font-medium text-slate-300">AI Credits this month</span>
-        </div>
-        <span className={`text-xs font-semibold ${isExhausted ? 'text-rose-400' : isLow ? 'text-amber-400' : 'text-slate-400'}`}>{used} / {limit}</span>
-      </div>
-      <div className="h-1.5 bg-slate-700 rounded-full overflow-hidden">
-        <div className={`h-full rounded-full transition-all ${isExhausted ? 'bg-rose-500' : isLow ? 'bg-amber-500' : 'bg-brand-500'}`} style={{ width: `${pct}%` }} />
-      </div>
-      {isExhausted && (
-        <div className="flex items-center justify-between mt-3">
-          <p className="text-xs text-rose-400">Monthly limit reached</p>
-          <Link href="/settings/billing" className="text-xs text-brand-400 font-medium hover:text-brand-300 transition-colors">Upgrade plan →</Link>
-        </div>
-      )}
-      {isLow && !isExhausted && (
-        <p className="text-xs text-amber-400 mt-2">{limit - used} credits remaining — <Link href="/settings/billing" className="underline underline-offset-2 hover:text-amber-300">upgrade for more</Link></p>
-      )}
-    </div>
-  );
-}
-
-function CreditsCardContent({ credits, loading }: { credits: Credits | null; loading: boolean }) {
-  if (loading || !credits) {
-    return (
-      <>
-        <div className="h-7 bg-slate-700/50 rounded-lg animate-pulse mb-2 w-20" />
-        <p className="text-slate-500 text-xs">Loading...</p>
-      </>
-    );
-  }
-  if (credits.unlimited) {
-    return (
-      <>
-        <span className="font-display text-2xl font-800 text-white mb-1 block">Unlimited</span>
-        <div className="flex items-center gap-1.5">
-          <div className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-          <span className="text-xs text-emerald-400 font-medium">Scale plan — no limits</span>
-        </div>
-      </>
-    );
-  }
-  const remaining = credits.remaining ?? 0;
-  const limit     = credits.limit ?? 100;
-  const pct       = Math.min(100, Math.round(((credits.used ?? 0) / limit) * 100));
-  const isLow     = pct >= 80;
-  const isOut     = pct >= 100;
-  return (
-    <>
-      <p className={`font-display text-2xl font-800 mb-1 ${isOut ? 'text-rose-400' : isLow ? 'text-amber-400' : 'text-white'}`}>
-        {remaining.toLocaleString('nl-NL')}
-      </p>
-      <p className="text-slate-500 text-xs">{isOut ? 'Credits used up this month' : `of ${limit} credits remaining`}</p>
-    </>
-  );
-}
-
-function StatCard({ label, children, icon: Icon, color }: { label: string; children: React.ReactNode; icon: any; color: string }) {
-  return (
-    <div className="bg-slate-800/50 border border-slate-700/50 rounded-2xl p-5">
-      <div className="flex items-center justify-between mb-3">
-        <p className="text-slate-400 text-xs font-medium">{label}</p>
-        <div className={`w-8 h-8 rounded-lg ${color} flex items-center justify-center`}>
-          <Icon className="w-4 h-4 text-white" />
-        </div>
-      </div>
-      {children}
-    </div>
-  );
-}
-
-export default function DashboardPage() {
-  const { user }     = useAuthStore();
-  const { planSlug } = usePermissions();
-
-  const [stats,        setStats]        = useState<Stats | null>(null);
-  const [topProducts,  setTopProducts]  = useState<TopProduct[]>([]);
-  const [integrations, setIntegrations] = useState<Integration[]>([]);
-  const [insight,      setInsight]      = useState<AiInsight | null>(null);
-  const [credits,      setCredits]      = useState<Credits | null>(null);
-  const [loading,      setLoading]      = useState(true);
-  const [syncing,      setSyncing]      = useState<string | null>(null);
-  const [appReady,     setAppReady]     = useState(false);
-  const [insightError, setInsightError] = useState(false);
-
-  const handleAppReady = (data: { integrations: any[]; overview: any; topProducts: any[]; credits: any }) => {
-    setIntegrations(data.integrations ?? []);
-    setTopProducts(data.topProducts ?? []);
-    setCredits(data.credits);
-    if (data.overview) {
-      const curr    = data.overview.current;
-      const revenue = parseFloat(curr?.revenue ?? 0);
-      const orders  = parseInt(curr?.orders_count ?? 0);
-      setStats({
-        revenue,
-        orders,
-        avgOrder: orders > 0 ? revenue / orders : 0,
-        change: { revenue: data.overview.changes?.revenue ?? 0, orders: data.overview.changes?.orders_count ?? 0 },
-      });
+  if (platform === 'bolcom') {
+    // offer_id beschikbaar en lang genoeg om een UUID/offer ID te zijn
+    if (offerId && offerId.length > 10 && !/^\d{8,14}$/.test(offerId)) {
+      return `https://www.bol.com/nl/nl/p/product/${offerId}/`;
     }
-    setLoading(false);
-    setAppReady(true);
-    api.get('/ai/insights').then(res => setInsight(res.data)).catch(() => setInsightError(true));
-  };
+    // EAN beschikbaar — zoek op EAN (zeer nauwkeurig)
+    if (ean && /^\d{8,14}$/.test(ean)) {
+      return `https://www.bol.com/nl/nl/s/?searchtext=${encodeURIComponent(ean)}`;
+    }
+    // Fallback: zoek op producttitel
+    if (title) {
+      return `https://www.bol.com/nl/nl/s/?searchtext=${encodeURIComponent(title)}`;
+    }
+  }
 
-  const reloadStats = async () => {
-    try {
-      const [intRes, ovRes] = await Promise.allSettled([
-        api.get('/integrations'),
-        api.get('/analytics/overview?period=7d'),
-      ]);
-      if (intRes.status === 'fulfilled') setIntegrations(intRes.value.data ?? []);
-      if (ovRes.status === 'fulfilled') {
-        const curr    = ovRes.value.data?.current;
-        const revenue = parseFloat(curr?.revenue ?? 0);
-        const orders  = parseInt(curr?.orders_count ?? 0);
-        setStats({
-          revenue, orders,
-          avgOrder: orders > 0 ? revenue / orders : 0,
-          change: { revenue: ovRes.value.data?.changes?.revenue ?? 0, orders: ovRes.value.data?.changes?.orders_count ?? 0 },
-        });
-      }
-    } catch {}
-  };
+  if (platform === 'shopify' && product.shop_domain && product.handle) {
+    return `https://${product.shop_domain}/products/${product.handle}`;
+  }
 
-  if (!appReady) return <AppLoader onReady={handleAppReady} />;
+  if (platform === 'amazon') {
+    if (offerId) return `https://www.amazon.nl/dp/${offerId}`;
+    if (ean)    return `https://www.amazon.nl/s?k=${encodeURIComponent(ean)}`;
+  }
 
-  const handleSync = async (integrationId: string) => {
-    setSyncing(integrationId);
-    try {
-      await api.post(`/integrations/${integrationId}/sync`, { jobType: 'incremental' });
-      setTimeout(() => reloadStats(), 4000);
-    } catch {}
-    setSyncing(null);
-  };
+  if (platform === 'etsy' && offerId) {
+    return `https://www.etsy.com/listing/${offerId}`;
+  }
 
-  const stores    = integrations.filter(i => !['bolcom_ads', 'google_ads'].includes(i.platformSlug) && i.status !== 'disconnected');
-  const hasStores = stores.length > 0;
+  if (platform === 'woocommerce' && product.shop_domain && product.handle) {
+    return `https://${product.shop_domain}/product/${product.handle}`;
+  }
+
+  return null;
+}
+
+export default function ProductsPage() {
+  const [products, setProducts] = useState<any[]>([]);
+  const [search,   setSearch]   = useState('');
+  const [platform, setPlatform] = useState('');
+  const [loading,  setLoading]  = useState(true);
+
+  useEffect(() => {
+    const load = async () => {
+      setLoading(true);
+      try {
+        const params = new URLSearchParams({ limit: '100' });
+        if (platform) params.set('platform', platform);
+        const res = await api.get(`/analytics/top-products?${params}`);
+        setProducts(res.data.products ?? []);
+      } catch {}
+      setLoading(false);
+    };
+    load();
+  }, [platform]);
+
+  const filtered = products.filter(p =>
+    p.title?.toLowerCase().includes(search.toLowerCase()) ||
+    p.sku?.toLowerCase().includes(search.toLowerCase()) ||
+    p.ean?.toLowerCase().includes(search.toLowerCase())
+  );
+
+  // Revenue excl. BTW voor totalen
+  const totalRevenue = filtered.reduce((s, p) => s + parseFloat(p.total_revenue ?? 0) / 1.21, 0);
+  const totalSold    = filtered.reduce((s, p) => s + parseInt(p.total_sold ?? 0), 0);
 
   return (
-    <PageErrorBoundary label="dashboard">
-      <div className="p-6 max-w-5xl mx-auto">
-        <OnboardingChecklist />
+    <div className="p-6 max-w-7xl mx-auto">
 
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="font-display text-2xl font-800 text-white">{getGreeting()}, {user?.firstName ?? 'there'} 👋</h1>
-            <p className="text-slate-400 text-sm mt-1">{new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
-          </div>
-          <Link href="/dashboard/ai-insights" className="flex items-center gap-2 bg-brand-600/10 border border-brand-600/20 hover:bg-brand-600/20 text-brand-400 text-xs font-medium px-3 py-2 rounded-xl transition-colors">
-            <Sparkles className="w-3.5 h-3.5" />
-            AI Insights
-          </Link>
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="font-display text-2xl font-800 text-white mb-1">Products</h1>
+          <p className="text-slate-400 text-sm">Best performing products across all connected stores</p>
         </div>
-
-        {credits && !credits.unlimited && <CreditBar credits={credits} planSlug={planSlug} />}
-
-        {!hasStores && !loading && <CardErrorBoundary><EmptyDashboard /></CardErrorBoundary>}
-
-        {hasStores && (
-          <>
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-              <StatCard label="Revenue excl. VAT (7d)" icon={TrendingUp} color="bg-emerald-500">
-                {loading || !stats ? <div className="h-7 bg-slate-700/50 rounded-lg animate-pulse mb-2" /> : (
-                  <><p className="font-display text-2xl font-800 text-white mb-1">{formatCurrency((stats.revenue ?? 0) / 1.21)}</p><ChangeBadge change={stats.change.revenue} /></>
-                )}
-              </StatCard>
-
-              <StatCard label="Orders (7d)" icon={ShoppingCart} color="bg-blue-500">
-                {loading || !stats ? <div className="h-7 bg-slate-700/50 rounded-lg animate-pulse mb-2" /> : (
-                  <><p className="font-display text-2xl font-800 text-white mb-1">{(stats.orders ?? 0).toString()}</p><ChangeBadge change={stats.change.orders} /></>
-                )}
-              </StatCard>
-
-              <StatCard label="AI Credits" icon={Zap} color="bg-violet-500">
-                <CreditsCardContent credits={credits} loading={loading} />
-              </StatCard>
-
-              <StatCard label="Avg order value (7d)" icon={TrendingUp} color="bg-amber-500">
-                {loading || !stats ? <div className="h-7 bg-slate-700/50 rounded-lg animate-pulse mb-2" /> : (
-                  <><p className="font-display text-2xl font-800 text-white mb-1">{formatCurrency(stats.avgOrder ?? 0)}</p><p className="text-slate-500 text-xs">per order</p></>
-                )}
-              </StatCard>
+        {!loading && filtered.length > 0 && (
+          <div className="hidden sm:flex items-center gap-6 text-right">
+            <div>
+              <div className="text-xs text-slate-500 uppercase tracking-wider mb-0.5">Total revenue excl. VAT</div>
+              <div className="text-lg font-700 text-white">{formatCurrency(totalRevenue)}</div>
             </div>
-
-            <div className="grid lg:grid-cols-2 gap-4 mb-6">
-              <CardErrorBoundary>
-                <div className="bg-slate-800/50 border border-slate-700/50 rounded-2xl p-5">
-                  <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-sm font-semibold text-slate-300">Connected stores</h2>
-                    <Link href="/dashboard/integrations" className="text-xs text-brand-400 hover:text-brand-300 transition-colors">Manage →</Link>
-                  </div>
-                  <div className="space-y-3">
-                    {stores.map(store => (
-                      <div key={store.id} className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-lg bg-slate-700 flex items-center justify-center">
-                            <Store className="w-3.5 h-3.5 text-slate-400" />
-                          </div>
-                          <div>
-                            <p className="text-sm font-medium text-white">{store.shopName || store.platformSlug}</p>
-                            <p className="text-xs text-slate-500">Last sync: {timeAgo(store.lastSyncAt)}</p>
-                          </div>
-                        </div>
-                        <button onClick={() => handleSync(store.id)} disabled={syncing === store.id}
-                          className="w-7 h-7 rounded-lg bg-slate-700 hover:bg-slate-600 flex items-center justify-center transition-colors disabled:opacity-50" title="Sync now">
-                          <RefreshCw className={`w-3 h-3 text-slate-400 ${syncing === store.id ? 'animate-spin' : ''}`} />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </CardErrorBoundary>
-
-              <CardErrorBoundary>
-                <div className="bg-slate-800/50 border border-slate-700/50 rounded-2xl p-5">
-                  <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-sm font-semibold text-slate-300">Top products (7d)</h2>
-                    <Link href="/dashboard/products" className="text-xs text-brand-400 hover:text-brand-300 transition-colors">All products →</Link>
-                  </div>
-                  {topProducts.length === 0 ? (
-                    <p className="text-slate-500 text-sm py-4 text-center">No sales data yet</p>
-                  ) : (
-                    <div className="space-y-3">
-                      {topProducts.slice(0, 4).map((p, i) => (
-                        <div key={i} className="flex items-center justify-between gap-3">
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-white truncate">{p.title}</p>
-                            {/* FIX: total_sold ipv units_sold */}
-                            <p className="text-xs text-slate-500">{p.total_sold} sold</p>
-                          </div>
-                          {/* FIX: total_revenue (string) ipv revenue, excl. BTW */}
-                          <p className="text-sm font-semibold text-emerald-400 flex-shrink-0">
-                            {formatCurrency(parseFloat(p.total_revenue ?? '0') / 1.21)}
-                          </p>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </CardErrorBoundary>
+            <div>
+              <div className="text-xs text-slate-500 uppercase tracking-wider mb-0.5">Units sold</div>
+              <div className="text-lg font-700 text-white">{totalSold.toLocaleString()}</div>
             </div>
-
-            <CardErrorBoundary>
-              <div className="bg-slate-800/50 border border-slate-700/50 rounded-2xl p-5">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-2">
-                    <div className="w-7 h-7 rounded-lg bg-brand-600/20 flex items-center justify-center">
-                      <Sparkles className="w-3.5 h-3.5 text-brand-400" />
-                    </div>
-                    <h2 className="text-sm font-semibold text-slate-300">Today's AI Insight</h2>
-                  </div>
-                  <Link href="/dashboard/ai-insights" className="text-xs text-brand-400 hover:text-brand-300 transition-colors">Full briefing →</Link>
-                </div>
-                {insightError ? (
-                  <div className="flex items-center gap-2 text-slate-500 text-sm py-2">
-                    <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                    <span>Insight couldn't load. <Link href="/dashboard/ai-insights" className="text-brand-400 hover:text-brand-300">Try the full page →</Link></span>
-                  </div>
-                ) : insight ? (
-                  <div>
-                    <p className="text-slate-300 text-sm leading-relaxed mb-4">{insight.briefing}</p>
-                    {insight.actions?.slice(0, 2).map((action, i) => (
-                      <div key={i} className="flex items-start gap-3 py-2 border-t border-slate-700/50 first:border-0 first:pt-0">
-                        <div className={`w-1.5 h-1.5 rounded-full mt-1.5 flex-shrink-0 ${action.priority === 'high' ? 'bg-rose-400' : action.priority === 'medium' ? 'bg-amber-400' : 'bg-slate-500'}`} />
-                        <div>
-                          <p className="text-sm font-medium text-white">{action.title}</p>
-                          <p className="text-xs text-slate-400 mt-0.5">{action.description}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    <div className="h-4 bg-slate-700/50 rounded animate-pulse w-3/4" />
-                    <div className="h-4 bg-slate-700/50 rounded animate-pulse w-1/2" />
-                  </div>
-                )}
-              </div>
-            </CardErrorBoundary>
-          </>
+          </div>
         )}
       </div>
-    </PageErrorBoundary>
+
+      {/* Filters */}
+      <div className="flex gap-3 mb-6">
+        <div className="relative flex-1 max-w-sm">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+          <input
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Search by name, SKU or EAN..."
+            className="w-full bg-slate-800 border border-slate-700 text-white text-sm rounded-xl pl-9 pr-4 py-2.5 focus:outline-none focus:ring-1 focus:ring-brand-500 placeholder-slate-500"
+          />
+        </div>
+        <select
+          value={platform}
+          onChange={e => setPlatform(e.target.value)}
+          className="bg-slate-800 border border-slate-700 text-slate-300 text-sm rounded-xl px-3 py-2 focus:outline-none focus:ring-1 focus:ring-brand-500"
+        >
+          <option value="">All platforms</option>
+          {Object.entries(PLATFORM_LABELS).map(([id, label]) => (
+            <option key={id} value={id}>{label}</option>
+          ))}
+        </select>
+      </div>
+
+      {/* Table */}
+      <div className="bg-slate-800/50 border border-slate-700/50 rounded-2xl overflow-hidden">
+        {loading ? (
+          <div className="p-8 space-y-3">
+            {[...Array(5)].map((_, i) => (
+              <div key={i} className="h-12 bg-slate-700/30 rounded-xl animate-pulse" />
+            ))}
+          </div>
+        ) : filtered.length > 0 ? (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-slate-700/50">
+                  <th className="text-left px-5 py-3.5 text-xs font-semibold text-slate-500 uppercase tracking-wider w-8">#</th>
+                  <th className="text-left px-5 py-3.5 text-xs font-semibold text-slate-500 uppercase tracking-wider">Product</th>
+                  <th className="text-left px-5 py-3.5 text-xs font-semibold text-slate-500 uppercase tracking-wider">Platform</th>
+                  <th className="text-right px-5 py-3.5 text-xs font-semibold text-slate-500 uppercase tracking-wider">Units sold</th>
+                  <th className="text-right px-5 py-3.5 text-xs font-semibold text-slate-500 uppercase tracking-wider">Revenue excl. VAT</th>
+                  <th className="text-right px-5 py-3.5 text-xs font-semibold text-slate-500 uppercase tracking-wider">Avg price</th>
+                  <th className="text-center px-5 py-3.5 text-xs font-semibold text-slate-500 uppercase tracking-wider">Link</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-700/30">
+                {filtered.map((p, i) => {
+                  const productUrl = getProductUrl(p);
+                  return (
+                    <tr key={i} className="hover:bg-slate-700/20 transition-colors">
+                      <td className="px-5 py-4 text-sm text-slate-600 font-medium">{i + 1}</td>
+                      <td className="px-5 py-4">
+                        <div className="text-sm text-white font-medium leading-snug max-w-xs">{p.title}</div>
+                        {p.sku && <div className="text-xs text-slate-500 mt-0.5">{p.sku}</div>}
+                      </td>
+                      <td className="px-5 py-4">
+                        <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium ${PLATFORM_COLORS[p.platform] ?? 'bg-slate-700 text-slate-400'}`}>
+                          {PLATFORM_LABELS[p.platform] ?? p.platform}
+                        </span>
+                      </td>
+                      <td className="px-5 py-4 text-right">
+                        <span className="text-slate-300 font-medium">{parseInt(p.total_sold ?? 0).toLocaleString()}</span>
+                      </td>
+                      <td className="px-5 py-4 text-right">
+                        <div className="flex items-center justify-end gap-1.5">
+                          {/* FIX: excl. BTW */}
+                          <span className="font-semibold text-white">{formatCurrency(parseFloat(p.total_revenue ?? 0) / 1.21)}</span>
+                          <TrendingUp className="w-3 h-3 text-emerald-400" />
+                        </div>
+                      </td>
+                      <td className="px-5 py-4 text-right text-slate-400">
+                        {formatCurrency(parseFloat(p.avg_price ?? 0) / 1.21)}
+                      </td>
+                      <td className="px-5 py-4 text-center">
+                        {productUrl ? (
+                          <a
+                            href={productUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-slate-700/50 hover:bg-brand-600/30 hover:text-brand-400 text-slate-500 transition-colors"
+                            title={`Open on ${PLATFORM_LABELS[p.platform] ?? p.platform}`}
+                          >
+                            <ExternalLink className="w-3.5 h-3.5" />
+                          </a>
+                        ) : (
+                          <span className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-slate-700">
+                            <Package className="w-3.5 h-3.5" />
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div className="text-center py-16">
+            <ShoppingBag className="w-10 h-10 text-slate-600 mx-auto mb-3" />
+            <p className="text-slate-400 font-medium mb-1">
+              {search ? 'No products found' : 'No products'}
+            </p>
+            <p className="text-slate-500 text-sm">
+              {!search && 'Connect a store and sync your data to see products.'}
+            </p>
+          </div>
+        )}
+      </div>
+
+      {filtered.length > 0 && (
+        <p className="text-xs text-slate-600 mt-3 text-right">
+          {filtered.length} product{filtered.length !== 1 ? 's' : ''}
+          {search && ` matching "${search}"`}
+        </p>
+      )}
+    </div>
   );
 }
