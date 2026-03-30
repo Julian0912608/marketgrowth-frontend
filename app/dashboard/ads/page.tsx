@@ -2,8 +2,9 @@
 
 // app/dashboard/ads/page.tsx
 // Herbouwd: per-platform blokken, Google Ads zichtbaar, overzichtelijk bij meerdere kanalen
+// FIX: period filter triggert nu correct een nieuwe API call bij elke klik
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   Megaphone, TrendingUp, MousePointer, Eye,
   RefreshCw, AlertCircle, ArrowUpRight, ArrowDownRight,
@@ -201,7 +202,10 @@ export default function AdsPage() {
   const [syncError,   setSyncError]   = useState('');
   const [syncSuccess, setSyncSuccess] = useState('');
 
-  const load = async (p = period, from = customFrom, to = customTo) => {
+  // FIX: useCallback voorkomt stale closure — load gebruikt altijd
+  // de meegegeven parameters, niet de state waarden van het moment
+  // van aanmaken. Dit was de oorzaak van de period-filter bug.
+  const load = useCallback(async (p: string, from: string = '', to: string = '') => {
     setLoading(true);
     try {
       const params = p === 'custom' && from && to
@@ -215,11 +219,12 @@ export default function AdsPage() {
       setNoData(true);
     }
     setLoading(false);
-  };
+  }, []);
 
+  // FIX: period als dependency zodat effect opnieuw draait bij wijziging
   useEffect(() => {
     if (period !== 'custom') load(period);
-  }, [period]);
+  }, [period, load]);
 
   const handlePeriod = (p: string) => {
     setPeriod(p);
@@ -239,7 +244,7 @@ export default function AdsPage() {
       if (platform === 'bolcom_ads') {
         const res = await api.post('/integrations/advertising/bolcom/sync');
         setSyncSuccess(`Sync geslaagd: ${res.data.campaigns ?? 0} campagnes bijgewerkt`);
-        await load();
+        await load(period, customFrom, customTo);
       }
     } catch (e: any) {
       setSyncError(e.response?.data?.error ?? 'Sync mislukt');
