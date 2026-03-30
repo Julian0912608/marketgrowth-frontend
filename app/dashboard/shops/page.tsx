@@ -1,8 +1,6 @@
 'use client';
 
 // app/dashboard/shops/page.tsx
-// Multi-shop beheer — beschikbaar voor Growth (3 shops) en Scale (onbeperkt)
-// Toont alle gekoppelde winkels met per-winkel KPIs en snelle acties
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
@@ -50,13 +48,13 @@ function formatEur(val: number): string {
 }
 
 function timeAgo(dateStr: string | null): string {
-  if (!dateStr) return 'Nooit';
+  if (!dateStr) return 'Never';
   const diff = Date.now() - new Date(dateStr).getTime();
   const mins = Math.floor(diff / 60000);
-  if (mins < 60)  return `${mins}m geleden`;
+  if (mins < 60)  return `${mins}m ago`;
   const hrs = Math.floor(mins / 60);
-  if (hrs < 24)   return `${hrs}u geleden`;
-  return `${Math.floor(hrs / 24)}d geleden`;
+  if (hrs < 24)   return `${hrs}h ago`;
+  return `${Math.floor(hrs / 24)}d ago`;
 }
 
 export default function ShopsPage() {
@@ -72,13 +70,11 @@ export default function ShopsPage() {
   const load = async () => {
     setLoading(true);
     try {
-      // Haal integraties op
       const intRes = await api.get('/integrations');
       const integrations = (intRes.data ?? []).filter(
         (i: any) => i.platformSlug !== 'bolcom_ads' && i.status !== 'disconnected'
       );
 
-      // Haal per-winkel stats op
       const statsPromises = integrations.map(async (int: any) => {
         try {
           const statsRes = await api.get(
@@ -138,19 +134,17 @@ export default function ShopsPage() {
     setSyncing(null);
   };
 
-  // Totalen over alle winkels
   const totalRevenue = shops.reduce((s, sh) => s + sh.revenue7d, 0);
   const totalOrders  = shops.reduce((s, sh) => s + sh.orders7d, 0);
 
   return (
     <div className="p-6 max-w-6xl mx-auto">
 
-      {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="font-display text-2xl font-800 text-white mb-1">Mijn winkels</h1>
+          <h1 className="font-display text-2xl font-800 text-white mb-1">My stores</h1>
           <p className="text-slate-400 text-sm">
-            {shops.length} van {shopLimit === 999 ? 'onbeperkt' : shopLimit} winkels gekoppeld
+            {shops.length} of {shopLimit === 999 ? 'unlimited' : shopLimit} stores connected
           </p>
         </div>
         {shops.length < shopLimit && (
@@ -159,28 +153,26 @@ export default function ShopsPage() {
             className="flex items-center gap-2 bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors"
           >
             <Plus className="w-4 h-4" />
-            Winkel toevoegen
+            Add store
           </Link>
         )}
       </div>
 
-      {/* Totalen banner */}
       {shops.length > 1 && (
         <div className="grid grid-cols-2 gap-4 mb-6">
           <div className="bg-slate-800/50 border border-slate-700/50 rounded-2xl p-5">
-            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">Totale omzet excl. BTW (7d)</p>
+            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">Total revenue excl. VAT (7d)</p>
             <p className="text-2xl font-bold text-white">{formatEur(totalRevenue)}</p>
-            <p className="text-xs text-slate-500 mt-1">over {shops.length} winkels</p>
+            <p className="text-xs text-slate-500 mt-1">across {shops.length} stores</p>
           </div>
           <div className="bg-slate-800/50 border border-slate-700/50 rounded-2xl p-5">
-            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">Totale orders (7d)</p>
+            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">Total orders (7d)</p>
             <p className="text-2xl font-bold text-white">{totalOrders}</p>
-            <p className="text-xs text-slate-500 mt-1">over alle platforms</p>
+            <p className="text-xs text-slate-500 mt-1">across all platforms</p>
           </div>
         </div>
       )}
 
-      {/* Winkel kaarten */}
       {loading ? (
         <div className="flex items-center justify-center py-20">
           <RefreshCw className="w-5 h-5 animate-spin text-slate-500" />
@@ -188,14 +180,14 @@ export default function ShopsPage() {
       ) : shops.length === 0 ? (
         <div className="bg-slate-800/50 border border-slate-700/50 rounded-2xl p-12 text-center">
           <Store className="w-10 h-10 text-slate-600 mx-auto mb-4" />
-          <h2 className="text-white font-semibold mb-2">Nog geen winkels gekoppeld</h2>
-          <p className="text-slate-400 text-sm mb-6">Koppel je eerste winkel om te beginnen met data verzamelen.</p>
+          <h2 className="text-white font-semibold mb-2">No stores connected yet</h2>
+          <p className="text-slate-400 text-sm mb-6">Connect your first store to start collecting data.</p>
           <Link
             href="/dashboard/integrations"
             className="inline-flex items-center gap-2 bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors"
           >
             <Plus className="w-4 h-4" />
-            Winkel koppelen
+            Connect store
           </Link>
         </div>
       ) : (
@@ -206,11 +198,7 @@ export default function ShopsPage() {
             const isSyncing  = syncing === shop.id;
 
             return (
-              <div
-                key={shop.id}
-                className="bg-slate-800/50 border border-slate-700/50 rounded-2xl p-5 hover:border-slate-600/50 transition-all"
-              >
-                {/* Shop header */}
+              <div key={shop.id} className="bg-slate-800/50 border border-slate-700/50 rounded-2xl p-5 hover:border-slate-600/50 transition-all">
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-center gap-3">
                     <div className={`w-10 h-10 rounded-xl border flex items-center justify-center font-bold text-sm ${colorClass}`}>
@@ -228,20 +216,19 @@ export default function ShopsPage() {
                       </span>
                     ) : (
                       <span className="flex items-center gap-1 text-xs text-emerald-400">
-                        <CheckCircle className="w-3.5 h-3.5" /> Actief
+                        <CheckCircle className="w-3.5 h-3.5" /> Active
                       </span>
                     )}
                   </div>
                 </div>
 
-                {/* Stats */}
                 <div className="grid grid-cols-3 gap-3 mb-4">
                   <div className="bg-slate-900/40 rounded-xl p-3 text-center">
-                    <p className="text-slate-500 text-xs mb-1">Omzet excl. BTW (7d)</p>
+                    <p className="text-slate-500 text-xs mb-1">Revenue excl. VAT (7d)</p>
                     <p className="text-white font-bold text-sm">{formatEur(shop.revenue7d)}</p>
                     {shop.revenueChange !== 0 && (
                       <p className={`text-xs mt-0.5 ${shop.revenueChange >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                        {shop.revenueChange >= 0 ? '↑' : '↓'}{Math.abs(shop.revenueChange)}%
+                        {shop.revenueChange >= 0 ? '+' : ''}{shop.revenueChange}%
                       </p>
                     )}
                   </div>
@@ -250,16 +237,15 @@ export default function ShopsPage() {
                     <p className="text-white font-bold text-sm">{shop.orders7d}</p>
                   </div>
                   <div className="bg-slate-900/40 rounded-xl p-3 text-center">
-                    <p className="text-slate-500 text-xs mb-1">Gem. order</p>
+                    <p className="text-slate-500 text-xs mb-1">Avg. order</p>
                     <p className="text-white font-bold text-sm">{formatEur(shop.avgOrder7d)}</p>
                   </div>
                 </div>
 
-                {/* Footer */}
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-1.5 text-xs text-slate-500">
                     <Clock className="w-3.5 h-3.5" />
-                    Sync: {timeAgo(shop.lastSyncAt)}
+                    Last sync: {timeAgo(shop.lastSyncAt)}
                   </div>
                   <div className="flex items-center gap-2">
                     <button
@@ -280,7 +266,6 @@ export default function ShopsPage() {
                   </div>
                 </div>
 
-                {/* Error message */}
                 {isError && shop.errorMessage && (
                   <div className="mt-3 px-3 py-2 bg-rose-500/10 border border-rose-500/20 rounded-lg">
                     <p className="text-xs text-rose-300">{shop.errorMessage}</p>
@@ -290,7 +275,6 @@ export default function ShopsPage() {
             );
           })}
 
-          {/* Add shop card */}
           {shops.length < shopLimit && (
             <Link
               href="/dashboard/integrations"
@@ -300,11 +284,9 @@ export default function ShopsPage() {
                 <div className="w-10 h-10 rounded-xl bg-slate-700/50 flex items-center justify-center mx-auto mb-3 group-hover:bg-slate-700 transition-colors">
                   <Plus className="w-5 h-5 text-slate-400" />
                 </div>
-                <p className="text-slate-400 text-sm font-medium group-hover:text-white transition-colors">
-                  Winkel toevoegen
-                </p>
+                <p className="text-slate-400 text-sm font-medium group-hover:text-white transition-colors">Add store</p>
                 <p className="text-slate-600 text-xs mt-1">
-                  {shopLimit - shops.length} slot{shopLimit - shops.length !== 1 ? 's' : ''} beschikbaar
+                  {shopLimit - shops.length} slot{shopLimit - shops.length !== 1 ? 's' : ''} available
                 </p>
               </div>
             </Link>
